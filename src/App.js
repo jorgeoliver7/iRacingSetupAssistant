@@ -2,6 +2,9 @@ import React, { useEffect, useState, createContext, useContext } from "react";
 import "./App.css";
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 
+// Configuración de la API
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 // Context para autenticación
 const AuthContext = createContext();
 
@@ -22,7 +25,7 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       // Verificar token válido
-      fetch('http://localhost:3001/api/auth/profile', {
+      fetch(`${API_URL}/api/auth/profile`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.ok ? res.json() : Promise.reject())
@@ -35,7 +38,7 @@ const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (username, password) => {
-    const response = await fetch('http://localhost:3001/api/auth/login', {
+    const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -52,7 +55,7 @@ const AuthProvider = ({ children }) => {
   };
 
   const register = async (username, email, password) => {
-    const response = await fetch('http://localhost:3001/api/auth/register', {
+    const response = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password })
@@ -203,12 +206,12 @@ function AppContent() {
 
   useEffect(() => {
     // Cargar datos iniciales
-    fetch('http://localhost:3001/api/cars')
+    fetch(`${API_URL}/api/cars`)
       .then(res => res.json())
       .then(data => setCars(data))
       .catch(err => console.error('Error loading cars:', err));
 
-    fetch('http://localhost:3001/api/tracks')
+    fetch(`${API_URL}/api/tracks`)
       .then(res => res.json())
       .then(data => setTracks(data))
       .catch(err => console.error('Error loading tracks:', err));
@@ -230,7 +233,7 @@ function AppContent() {
         if (value) params.append(key, value);
       });
       
-      const response = await fetch(`http://localhost:3001/api/setups?${params}`);
+      const response = await fetch(`${API_URL}/api/setups?${params}`);
       const data = await response.json();
       setSetups(data.setups || []);
     } catch (err) {
@@ -242,7 +245,7 @@ function AppContent() {
     if (!token) return;
     
     try {
-      const response = await fetch('http://localhost:3001/api/favorites', {
+      const response = await fetch(`${API_URL}/api/favorites`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -262,7 +265,7 @@ function AppContent() {
       const isFavorited = favorites.some(f => f.setup_id === setupId);
       const method = isFavorited ? 'DELETE' : 'POST';
       
-      await fetch(`http://localhost:3001/api/favorites/${setupId}`, {
+      await fetch(`${API_URL}/api/favorites/${setupId}`, {
         method,
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -288,7 +291,7 @@ function AppContent() {
     console.log('Transformed params for backend:', requestParams);
     
     try {
-      const response = await fetch('http://localhost:3001/api/generator/generate', {
+      const response = await fetch(`${API_URL}/api/generator/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestParams)
@@ -509,56 +512,58 @@ function AppContent() {
   return (
         <div className="App">
           <header className="app-header">
-            <h1>🏎️ iRacing Setup Assistant</h1>
-            <nav className="main-nav">
-              <button 
-                className={currentView === 'search' ? 'active' : ''}
-                onClick={() => setCurrentView('search')}
-              >
-                🔍 {t('searchSetups')}
-              </button>
-              <button 
-                className={currentView === 'generator' ? 'active' : ''}
-                onClick={() => setCurrentView('generator')}
-              >
-                ⚙️ {t('generator')}
-              </button>
-              {user && (
-                <>
-                  <button 
-                    className={currentView === 'favorites' ? 'active' : ''}
-                    onClick={() => setCurrentView('favorites')}
-                  >
-                    ❤️ {t('favorites')}
-                  </button>
-                  <button 
-                    className={currentView === 'compare' ? 'active' : ''}
-                    onClick={() => setCurrentView('compare')}
-                  >
-                    📊 {t('compare')}
-                  </button>
-                </>
-              )}
-            </nav>
-            <div className="user-section">
-              <div className="language-selector">
-                <select 
-                  value={language} 
-                  onChange={(e) => changeLanguage(e.target.value)}
-                  className="language-select"
+            <div className="header-content">
+              <h1>iRacing Setup Assistant</h1>
+              <nav className="main-nav">
+                <button 
+                  className={currentView === 'search' ? 'active' : ''}
+                  onClick={() => setCurrentView('search')}
                 >
-                  <option value="es">🇪🇸 Español</option>
-                  <option value="en">🇺🇸 English</option>
-                </select>
-              </div>
-              {user ? (
-                <div className="user-info">
-                  <span>👤 {user.username}</span>
-                  <button onClick={logout}>{t('logout')}</button>
+                  🔍 {t('searchSetups')}
+                </button>
+                <button 
+                  className={currentView === 'generator' ? 'active' : ''}
+                  onClick={() => setCurrentView('generator')}
+                >
+                  ⚙️ {t('generator')}
+                </button>
+                {user && (
+                  <>
+                    <button 
+                      className={currentView === 'favorites' ? 'active' : ''}
+                      onClick={() => setCurrentView('favorites')}
+                    >
+                      ❤️ {t('favorites')}
+                    </button>
+                    <button 
+                      className={currentView === 'compare' ? 'active' : ''}
+                      onClick={() => setCurrentView('compare')}
+                    >
+                      📊 {t('compare')}
+                    </button>
+                  </>
+                )}
+              </nav>
+              <div className="user-section">
+                <div className="language-selector">
+                  <select 
+                    value={language} 
+                    onChange={(e) => changeLanguage(e.target.value)}
+                    className="language-select"
+                  >
+                    <option value="es">🇪🇸 Español</option>
+                    <option value="en">🇺🇸 English</option>
+                  </select>
                 </div>
-              ) : (
-                <button onClick={() => setAuthModalOpen(true)}>{t('login')}</button>
-              )}
+                {user ? (
+                  <div className="user-info">
+                    <span>👤 {user.username}</span>
+                    <button onClick={logout}>{t('logout')}</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setAuthModalOpen(true)}>{t('login')}</button>
+                )}
+              </div>
             </div>
           </header>
 
@@ -618,9 +623,6 @@ function AppContent() {
                   <div className="setup-header">
                     <div className="setup-title">
                       <h3>{cars.find(c => c.id === setup.car_id)?.name}</h3>
-                      {setup.is_generated && (
-                        <span className="generated-badge">🤖 {t('generated')}</span>
-                      )}
                     </div>
                     <div className="setup-actions">
                       <button 
@@ -657,26 +659,26 @@ function AppContent() {
                   
                   <div className="setup-info">
                     <div className="car-track-info">
-                      <p><strong>🏎️ {t('car')}:</strong> {cars.find(c => c.id === setup.car_id)?.name}</p>
-                      <p><strong>🏁 {t('track')}:</strong> {tracks.find(t => t.id === setup.track_id)?.name}</p>
+                      <p><strong>{t('car')}:</strong> {cars.find(c => c.id === setup.car_id)?.name}</p>
+                      <p><strong>{t('track')}:</strong> {tracks.find(t => t.id === setup.track_id)?.name}</p>
                     </div>
-                    <p><strong>📋 {t('session')}:</strong> {setup.session_type}</p>
+                    <p><strong>{t('session')}:</strong> {setup.session_type}</p>
                     
                     {setup.is_generated && setup.metadata && (
                       <div className="generated-info">
-                        <p><strong>🎯 {t('style')}:</strong> 
-                          {setup.metadata.setupStyle === 'safe' && `🛡️ ${t('safe')}`}
-                          {setup.metadata.setupStyle === 'balanced' && `⚖️ ${t('balanced')}`}
-                          {setup.metadata.setupStyle === 'aggressive' && `⚡ ${t('aggressive')}`}
+                        <p><strong>{t('style')}:</strong> 
+                          {setup.metadata.setupStyle === 'safe' && t('safe')}
+                          {setup.metadata.setupStyle === 'balanced' && t('balanced')}
+                          {setup.metadata.setupStyle === 'aggressive' && t('aggressive')}
                         </p>
-                        <p><strong>⏰ {t('generated')}:</strong> {new Date(setup.metadata.generatedAt).toLocaleString(language === 'es' ? 'es-ES' : 'en-US')}</p>
+                        <p><strong>{t('generated')}:</strong> {new Date(setup.metadata.generatedAt).toLocaleString(language === 'es' ? 'es-ES' : 'en-US')}</p>
                       </div>
                     )}
                     
                     {!setup.is_generated && (
                       <>
-                        <p><strong>Rating:</strong> ⭐ {setup.average_rating || 'N/A'}</p>
-                        <p><strong>Descargas:</strong> {setup.download_count || 0}</p>
+                        <p><strong>{t('rating')}:</strong> ⭐ {setup.average_rating || 'N/A'}</p>
+                        <p><strong>{t('downloads')}:</strong> {setup.download_count || 0}</p>
                       </>
                     )}
                   </div>
@@ -690,15 +692,15 @@ function AppContent() {
                            const isVisible = detailsDiv.style.display !== 'none';
                            detailsDiv.style.display = isVisible ? 'none' : 'block';
                            const btn = document.querySelector(`[data-setup-id="${setup.id}"]`);
-                           btn.textContent = isVisible ? `🔧 ${t('viewTechnicalDetails')}` : `🔧 ${t('hideTechnicalDetails')}`;
+                           btn.textContent = isVisible ? `🔧 ${t('technicalDetails')}` : `🔧 ${t('hideTechnicalDetails')}`;
                          }}
                          data-setup-id={setup.id}
                        >
-                         🔧 {t('viewTechnicalDetails')}
+                         🔧 {t('technicalDetails')}
                        </button>
                        
                        <div id={`details-${setup.id}`} className="setup-technical-details" style={{display: 'none'}}>
-                         <h4>📊 {t('completeTechnicalConfiguration')}</h4>
+                         <h4>📊 {t('completeTechnicalConfig')}</h4>
                          
                          {setup.data.suspension && (
                            <div className="tech-section">

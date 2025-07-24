@@ -308,7 +308,7 @@ async function updateDatabase() {
     if (bmwResult.rows.length > 0 && nurburgringResult.rows.length > 0) {
       await client.query(
         'INSERT INTO setups (car_id, track_id, session_type, data) VALUES ($1, $2, $3, $4)',
-        [bmwResult.rows[0].id, nurburgringResult.rows[0].id, 'Practice', JSON.stringify({
+        [bmwResult.rows[0].id, nurburgringResult.rows[0].id, 'Race', JSON.stringify({
           suspension: { front_spring: 115, rear_spring: 105 },
           aerodynamics: { front_wing: 6, rear_wing: 10 },
           differential: { preload: 40, coast: 20, power: 60 }

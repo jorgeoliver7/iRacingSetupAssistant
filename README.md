@@ -1,13 +1,32 @@
-# iRacing Setup Assistant
+# 🏎️ iRacing Setup Assistant
 
-Una aplicación web para ayudar a los usuarios de iRacing a encontrar configuraciones óptimas para sus coches en diferentes circuitos y tipos de sesión.
+Una aplicación web completa para ayudar a los usuarios de iRacing a encontrar, generar y compartir configuraciones óptimas para sus coches en diferentes circuitos y tipos de sesión.
 
-## Características
+## ✨ Características
 
-- Selección de coches de iRacing
-- Selección de circuitos
-- Diferentes tipos de sesión (Práctica, Clasificación, Carrera, Lluvia, Resistencia)
-- Recomendaciones de configuración basadas en la combinación seleccionada
+### 🔍 Búsqueda y Filtrado
+- Búsqueda avanzada de setups por coche, circuito y tipo de sesión
+- Filtros por categoría de coche, tipo de circuito y calificación
+- Sistema de favoritos personalizado
+
+### 🎛️ Generador de Setups
+- Generador inteligente de configuraciones
+- Múltiples estilos de setup (equilibrado, velocidad, estabilidad)
+- Ajustes automáticos basados en condiciones climáticas
+
+### 👥 Sistema de Usuarios
+- Registro y autenticación de usuarios
+- Perfiles personalizados
+- Sistema de calificaciones y comentarios
+
+### 📊 Comparación y Análisis
+- Comparador de setups lado a lado
+- Exportación de configuraciones a archivos
+- Estadísticas detalladas
+
+### 🌍 Internacionalización
+- Soporte multiidioma (Español/Inglés)
+- Interfaz adaptable
 
 ## Requisitos previos
 
@@ -94,8 +113,48 @@ La aplicación estará disponible en http://localhost:3000
 - `/public` - Archivos estáticos del frontend
 - `/backend` - Servidor API (Node.js/Express)
 
-## Tecnologías utilizadas
+## 🛠️ Tecnologías utilizadas
 
-- Frontend: React
-- Backend: Node.js, Express
-- Base de datos: PostgreSQL
+### Frontend
+- **React 19.1.0** - Framework principal
+- **CSS3** - Estilos responsivos
+- **Context API** - Gestión de estado
+- **i18n** - Internacionalización
+
+### Backend
+- **Node.js** - Runtime
+- **Express.js** - Framework web
+- **PostgreSQL** - Base de datos
+- **JWT** - Autenticación
+- **bcrypt** - Encriptación de contraseñas
+
+### DevOps
+- **Vercel** - Deployment frontend
+- **Railway** - Deployment backend
+- **Git** - Control de versiones
+
+## 🚀 Deployment
+
+### Opción Rápida
+```bash
+# Ejecutar script de deployment
+.\deploy.ps1
+```
+
+### Deployment Manual
+Consulta [DEPLOYMENT.md](DEPLOYMENT.md) para instrucciones detalladas de deployment en:
+- **Vercel** (Frontend)
+- **Railway** (Backend + Database)
+- **Netlify + Render** (Alternativa)
+
+## 🌐 Demo en Vivo
+
+- **Frontend**: [https://iracing-setup.vercel.app](https://iracing-setup.vercel.app)
+- **API**: [https://iracing-api.railway.app](https://iracing-api.railway.app)
+
+## 📱 PWA Support
+
+La aplicación incluye soporte para Progressive Web App (PWA):
+- Instalable en dispositivos móviles
+- Funciona offline (próximamente)
+- Notificaciones push (próximamente)
