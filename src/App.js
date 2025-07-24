@@ -1,4 +1,4 @@
-import React, { useEffect, useState, createContext, useContext } from "react";
+import React, { useEffect, useState, createContext, useContext, useCallback } from "react";
 import "./App.css";
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 
@@ -204,29 +204,7 @@ function AppContent() {
   const { user, token, logout } = useAuth();
   const { t, language, changeLanguage } = useLanguage();
 
-  useEffect(() => {
-    // Cargar datos iniciales
-    fetch(`${API_URL}/api/cars`)
-      .then(res => res.json())
-      .then(data => setCars(data))
-      .catch(err => console.error('Error loading cars:', err));
-
-    fetch(`${API_URL}/api/tracks`)
-      .then(res => res.json())
-      .then(data => setTracks(data))
-      .catch(err => console.error('Error loading tracks:', err));
-      
-    // Cargar setups iniciales
-    searchSetups();
-  }, []);
-
-  useEffect(() => {
-    if (user && token) {
-      loadFavorites();
-    }
-  }, [user, token]);
-
-  const searchSetups = async () => {
+  const searchSetups = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       Object.entries(searchFilters).forEach(([key, value]) => {
@@ -239,9 +217,9 @@ function AppContent() {
     } catch (err) {
       console.error('Error searching setups:', err);
     }
-  };
+  }, [searchFilters]);
 
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     if (!token) return;
     
     try {
@@ -253,7 +231,30 @@ function AppContent() {
     } catch (err) {
       console.error('Error loading favorites:', err);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    // Cargar coches
+    fetch(`${API_URL}/api/cars`)
+      .then(res => res.json())
+      .then(data => setCars(data))
+      .catch(err => console.error('Error loading cars:', err));
+      
+    // Cargar circuitos
+    fetch(`${API_URL}/api/tracks`)
+      .then(res => res.json())
+      .then(data => setTracks(data))
+      .catch(err => console.error('Error loading tracks:', err));
+      
+    // Cargar setups iniciales
+    searchSetups();
+  }, [searchSetups]);
+
+  useEffect(() => {
+    if (user && token) {
+      loadFavorites();
+    }
+  }, [user, token, loadFavorites]);
 
   const toggleFavorite = async (setupId) => {
     if (!token) {
