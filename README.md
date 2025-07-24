@@ -1,70 +1,101 @@
-# Getting Started with Create React App
+# iRacing Setup Assistant
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Una aplicación web para ayudar a los usuarios de iRacing a encontrar configuraciones óptimas para sus coches en diferentes circuitos y tipos de sesión.
 
-## Available Scripts
+## Características
 
-In the project directory, you can run:
+- Selección de coches de iRacing
+- Selección de circuitos
+- Diferentes tipos de sesión (Práctica, Clasificación, Carrera, Lluvia, Resistencia)
+- Recomendaciones de configuración basadas en la combinación seleccionada
 
-### `npm start`
+## Requisitos previos
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Node.js (v14 o superior)
+- PostgreSQL (opcional, la aplicación puede funcionar con datos de ejemplo)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Instalación
 
-### `npm test`
+### 1. Clonar el repositorio
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+git clone https://github.com/tu-usuario/iracing-setup-assistant.git
+cd iracing-setup-assistant
+```
 
-### `npm run build`
+### 2. Instalar dependencias
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+# Instalar dependencias del frontend
+npm install
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Instalar dependencias del backend
+cd backend
+npm install
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 3. Configurar la base de datos (opcional)
 
-### `npm run eject`
+Si deseas utilizar PostgreSQL para almacenar datos reales:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+1. Instala PostgreSQL si aún no lo tienes instalado
+2. Crea una base de datos en PostgreSQL con el nombre `iracingdb`:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+# Desde la línea de comandos de PostgreSQL (psql)
+CREATE DATABASE iracingdb;
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+3. Actualiza el archivo `.env` en la carpeta `backend` con tus credenciales:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+DATABASE_URL=postgresql://usuario:contraseña@localhost:5432/iracingdb
+```
 
-## Learn More
+> **Importante**: Reemplaza `usuario` y `contraseña` con tus credenciales reales de PostgreSQL.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+4. Ejecuta el script SQL para crear las tablas y datos de ejemplo:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+# Si tienes psql en tu PATH
+psql -U tu_usuario -d iracingdb -f backend/setup_database.sql
 
-### Code Splitting
+# Alternativamente, puedes copiar y pegar el contenido del archivo setup_database.sql
+# directamente en una herramienta como pgAdmin o DBeaver
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+> **Nota**: Si no configuras la base de datos, la aplicación funcionará con datos de ejemplo predefinidos. Verás mensajes de error en la consola del backend, pero la aplicación seguirá funcionando normalmente.
 
-### Analyzing the Bundle Size
+## Ejecución
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### 1. Iniciar el backend
 
-### Making a Progressive Web App
+```bash
+cd backend
+node index.js
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+El servidor backend estará disponible en http://localhost:4000
 
-### Advanced Configuration
+### 2. Iniciar el frontend
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+En otra terminal:
 
-### Deployment
+```bash
+# Desde la carpeta raíz del proyecto
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+La aplicación estará disponible en http://localhost:3000
 
-### `npm run build` fails to minify
+## Estructura del proyecto
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- `/src` - Código fuente del frontend (React)
+- `/public` - Archivos estáticos del frontend
+- `/backend` - Servidor API (Node.js/Express)
+
+## Tecnologías utilizadas
+
+- Frontend: React
+- Backend: Node.js, Express
+- Base de datos: PostgreSQL

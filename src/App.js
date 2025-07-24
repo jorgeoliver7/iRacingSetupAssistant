@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./App.css";
 
 function App() {
   const [cars, setCars] = useState([]);
@@ -30,51 +31,83 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "Arial" }}>
-      <h1>iRacing Setup Assistant</h1>
+    <div className="app-container">
+      <header className="app-header">
+        <h1>iRacing Setup Assistant</h1>
+        <p>Encuentra la configuración perfecta para tu coche en cualquier circuito</p>
+      </header>
 
-      <label>
-        Coche:
-        <select onChange={e => setSelectedCar(e.target.value)} value={selectedCar}>
-          <option value="">--Selecciona--</option>
-          {cars.map(car => (
-            <option key={car.id} value={car.id}>{car.name}</option>
-          ))}
-        </select>
-      </label>
+      <div className="selection-form">
+        <div className="form-group">
+          <label htmlFor="car-select">Coche:</label>
+          <select 
+            id="car-select"
+            onChange={e => setSelectedCar(e.target.value)} 
+            value={selectedCar}
+          >
+            <option value="">--Selecciona un coche--</option>
+            {cars.map(car => (
+              <option key={car.id} value={car.id}>{car.name}</option>
+            ))}
+          </select>
+        </div>
 
-      <br /><br />
+        <div className="form-group">
+          <label htmlFor="track-select">Circuito:</label>
+          <select 
+            id="track-select"
+            onChange={e => setSelectedTrack(e.target.value)} 
+            value={selectedTrack}
+          >
+            <option value="">--Selecciona un circuito--</option>
+            {tracks.map(track => (
+              <option key={track.id} value={track.id}>{track.name}</option>
+            ))}
+          </select>
+        </div>
 
-      <label>
-        Circuito:
-        <select onChange={e => setSelectedTrack(e.target.value)} value={selectedTrack}>
-          <option value="">--Selecciona--</option>
-          {tracks.map(track => (
-            <option key={track.id} value={track.id}>{track.name}</option>
-          ))}
-        </select>
-      </label>
+        <div className="form-group">
+          <label htmlFor="session-select">Tipo de sesión:</label>
+          <select 
+            id="session-select"
+            onChange={e => setSelectedSession(e.target.value)} 
+            value={selectedSession}
+          >
+            <option value="">--Selecciona una sesión--</option>
+            {sessions.map(session => (
+              <option key={session} value={session}>{session}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-      <br /><br />
-
-      <label>
-        Tipo de sesión:
-        <select onChange={e => setSelectedSession(e.target.value)} value={selectedSession}>
-          <option value="">--Selecciona--</option>
-          {sessions.map(session => (
-            <option key={session} value={session}>{session}</option>
-          ))}
-        </select>
-      </label>
-
-      <br /><br />
-
-      <button onClick={fetchSetup}>Mostrar Setup Recomendado</button>
+      <div style={{textAlign: 'center'}}>
+        <button 
+          className="submit-button" 
+          onClick={fetchSetup}
+          disabled={!selectedCar || !selectedTrack || !selectedSession}
+        >
+          Mostrar Setup Recomendado
+        </button>
+      </div>
 
       {setup && (
-        <div style={{ marginTop: "2rem", border: "1px solid #ccc", padding: "1rem" }}>
-          <h2>Setup recomendado</h2>
-          <pre>{JSON.stringify(setup.data, null, 2)}</pre>
+        <div className="setup-results">
+          <h2>Setup Recomendado para {cars.find(c => c.id === selectedCar)?.name} en {tracks.find(t => t.id === selectedTrack)?.name}</h2>
+          
+          <div className="setup-data">
+            {Object.entries(setup.data || {}).map(([category, values]) => (
+              <div key={category} className="setup-section">
+                <h3>{category}</h3>
+                {Object.entries(values).map(([key, value]) => (
+                  <div key={key} className="setup-item">
+                    <span className="setup-item-label">{key}:</span>
+                    <span className="setup-item-value">{value}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
