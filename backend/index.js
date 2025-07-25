@@ -5,9 +5,25 @@ require("dotenv").config();
 
 const app = express();
 
-// Configuración CORS para producción
+// Configuración CORS para producción y desarrollo
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3002',
+  process.env.FRONTEND_URL
+].filter(Boolean); // Eliminar valores undefined/null
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como mobile apps o curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -20,11 +36,14 @@ const pool = new Pool({
 });
 
 app.get("/api/cars", async (req, res) => {
+  console.log('GET /api/cars - Origin:', req.get('Origin'));
   try {
     const result = await pool.query("SELECT id, name FROM cars ORDER BY name");
+    console.log(`Cars fetched from DB: ${result.rows.length} items`);
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching cars:", error.message);
+    console.log('Returning example cars data');
     // Devolver datos de ejemplo si no se puede conectar a la base de datos
     const exampleCars = [
       { id: 1, name: "Ferrari 488 GT3" },
@@ -37,11 +56,14 @@ app.get("/api/cars", async (req, res) => {
 });
 
 app.get("/api/tracks", async (req, res) => {
+  console.log('GET /api/tracks - Origin:', req.get('Origin'));
   try {
     const result = await pool.query("SELECT id, name FROM tracks ORDER BY name");
+    console.log(`Tracks fetched from DB: ${result.rows.length} items`);
     res.json(result.rows);
   } catch (error) {
     console.error("Error fetching tracks:", error.message);
+    console.log('Returning example tracks data');
     // Devolver datos de ejemplo si no se puede conectar a la base de datos
     const exampleTracks = [
       { id: 1, name: "Spa-Francorchamps" },
