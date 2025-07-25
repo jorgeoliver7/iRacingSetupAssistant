@@ -137,8 +137,8 @@ La aplicación estará disponible en http://localhost:3000
 
 ### Opción Rápida
 ```bash
-# Ejecutar script de deployment
-.\deploy.ps1
+# Preparar y subir cambios a GitHub
+.\deploy-production.ps1
 ```
 
 ### Deployment Manual
@@ -146,6 +146,12 @@ Consulta [DEPLOYMENT.md](DEPLOYMENT.md) para instrucciones detalladas de deploym
 - **Vercel** (Frontend)
 - **Railway** (Backend + Database)
 - **Netlify + Render** (Alternativa)
+
+### Mejoras para Producción
+- ✅ **CORS configurado** para múltiples orígenes
+- ✅ **Health check endpoint** (`/health`) para monitoreo
+- ✅ **Variables de entorno** optimizadas
+- ✅ **Script de deployment** automatizado
 
 ## 🌐 Demo en Vivo
 

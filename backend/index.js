@@ -4,7 +4,15 @@ const { Pool } = require("pg");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+
+// Configuración CORS para producción
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const pool = new Pool({
@@ -84,6 +92,16 @@ app.get("/api/setup", async (req, res) => {
     };
     res.json(exampleSetup);
   }
+});
+
+// Health check endpoint para monitoreo
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 const PORT = process.env.PORT || 4000;

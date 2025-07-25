@@ -1,0 +1,43 @@
+﻿# COMANDOS PARA CONFIGURAR POSTGRESQL EN RAILWAY
+
+## 1. CREAR BASE DE DATOS
+1. En Railway, anadir servicio PostgreSQL
+2. Railway generara automaticamente DATABASE_URL
+3. Copiar la URL de conexion
+
+## 2. CONECTAR A LA BASE DE DATOS
+# Opcion A: Desde Railway Dashboard
+1. Ve a tu servicio PostgreSQL
+2. Pestana "Data"
+3. Usar el Query Editor
+
+# Opcion B: Desde terminal local
+psql "postgresql://usuario:password@host:5432/database"
+
+## 3. EJECUTAR SCRIPT DE INICIALIZACION
+# Copiar y pegar el contenido de railway_init.sql
+# O ejecutar desde archivo:
+\i railway_init.sql
+
+## 4. VERIFICAR INSTALACION
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+SELECT COUNT(*) FROM tracks;
+SELECT COUNT(*) FROM cars;
+
+## 5. CONFIGURAR VARIABLES DE ENTORNO
+# En tu servicio backend de Railway:
+DATABASE_URL=postgresql://usuario:password@host:5432/database
+NODE_ENV=production
+JWT_SECRET=tu-secreto-generado
+FRONTEND_URL=https://tu-frontend.vercel.app
+
+## 6. HEALTH CHECK
+# Verificar que el backend se conecte:
+GET https://tu-backend.railway.app/health
+
+## TROUBLESHOOTING
+# Si hay errores de conexion:
+1. Verificar DATABASE_URL
+2. Comprobar que PostgreSQL este activo
+3. Revisar logs del servicio backend
+4. Verificar que las tablas existan
