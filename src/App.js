@@ -8,7 +8,7 @@ const getApiUrl = () => {
     return process.env.REACT_APP_API_URL;
   }
   if (process.env.NODE_ENV === 'production') {
-    return typeof window !== 'undefined' ? window.location.origin : 'https://i-racing-setup-assistant-r12jsla4d-jorgeacedos-projects.vercel.app';
+    return typeof window !== 'undefined' ? window.location.origin : '';
   }
   return 'http://localhost:3001';
 };
@@ -34,7 +34,7 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       // Verificar token válido
-      const profileApiUrl = process.env.NODE_ENV === 'development' ? '/api/auth/profile' : `${API_URL}/api/auth/profile`;
+      const profileApiUrl = '/api/auth/profile';
       fetch(profileApiUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -48,7 +48,7 @@ const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (username, password) => {
-    const loginApiUrl = process.env.NODE_ENV === 'development' ? '/api/auth/login' : `${API_URL}/api/auth/login`;
+    const loginApiUrl = '/api/auth/login';
     const response = await fetch(loginApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -66,7 +66,7 @@ const AuthProvider = ({ children }) => {
   };
 
   const register = async (username, email, password) => {
-    const registerApiUrl = process.env.NODE_ENV === 'development' ? '/api/auth/register' : `${API_URL}/api/auth/register`;
+    const registerApiUrl = '/api/auth/register';
     const response = await fetch(registerApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -225,7 +225,7 @@ function AppContent() {
         if (value) params.append(key, value);
       });
       
-      const setupsApiUrl = process.env.NODE_ENV === 'development' ? `/api/setups?${params}` : `${API_URL}/api/setups?${params}`;
+      const setupsApiUrl = `/api/setups?${params}`;
       const response = await fetch(setupsApiUrl);
       const data = await response.json();
       setSetups(data.setups || []);
@@ -238,7 +238,7 @@ function AppContent() {
     if (!token) return;
     
     try {
-      const favoritesApiUrl = process.env.NODE_ENV === 'development' ? '/api/favorites' : `${API_URL}/api/favorites`;
+      const favoritesApiUrl = '/api/favorites';
       const response = await fetch(favoritesApiUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -257,7 +257,7 @@ function AppContent() {
         console.log('API_URL:', API_URL);
         
         // Cargar coches
-        const carsApiUrl = process.env.NODE_ENV === 'development' ? '/api/generator/cars' : `${API_URL}/api/generator/cars`;
+        const carsApiUrl = '/api/generator/cars';
         const carsResponse = await fetch(carsApiUrl);
         if (carsResponse.ok) {
           const carsData = await carsResponse.json();
@@ -265,7 +265,7 @@ function AppContent() {
         }
         
         // Cargar circuitos
-        const tracksApiUrl = process.env.NODE_ENV === 'development' ? '/api/generator/tracks' : `${API_URL}/api/generator/tracks`;
+        const tracksApiUrl = '/api/generator/tracks';
         const tracksResponse = await fetch(tracksApiUrl);
         if (tracksResponse.ok) {
           const tracksData = await tracksResponse.json();
@@ -306,7 +306,7 @@ function AppContent() {
       const isFavorited = favorites.some(f => f.setup_id === setupId);
       const method = isFavorited ? 'DELETE' : 'POST';
       
-      const favoriteApiUrl = process.env.NODE_ENV === 'development' ? `/api/favorites/${setupId}` : `${API_URL}/api/favorites/${setupId}`;
+      const favoriteApiUrl = `/api/favorites/${setupId}`;
        await fetch(favoriteApiUrl, {
          method,
          headers: { 'Authorization': `Bearer ${token}` }
@@ -329,8 +329,7 @@ function AppContent() {
     };
     
     try {
-      // Use relative path for local development (proxy will handle it)
-      const apiUrl = process.env.NODE_ENV === 'development' ? '/api/generator/generate' : `${API_URL}/api/generator/generate`;
+      const apiUrl = '/api/generator/generate';
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
