@@ -3,8 +3,16 @@ import "./App.css";
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 
 // Configuración de la API
-const API_URL = process.env.REACT_APP_API_URL || 
-  (process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:3001');
+const getApiUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return typeof window !== 'undefined' ? window.location.origin : '';
+  }
+  return 'http://localhost:3001';
+};
+const API_URL = getApiUrl();
 
 // Context para autenticación
 const AuthContext = createContext();
