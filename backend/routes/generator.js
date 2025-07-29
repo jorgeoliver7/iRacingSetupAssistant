@@ -8,6 +8,28 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
 
+// Get all cars
+router.get('/cars', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, name, category FROM cars ORDER BY name');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching cars:', error);
+    res.status(500).json({ error: 'Error al obtener coches' });
+  }
+});
+
+// Get all tracks
+router.get('/tracks', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, name, type, country FROM tracks ORDER BY name');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching tracks:', error);
+    res.status(500).json({ error: 'Error al obtener circuitos' });
+  }
+});
+
 // Generate base setup for car/track combination
 router.post('/generate', optionalAuth, async (req, res) => {
   try {

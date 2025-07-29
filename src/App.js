@@ -26,7 +26,7 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       // Verificar token válido
-      fetch(`${API_URL}/api/auth/profile`, {
+      fetch('/api/auth/profile', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.ok ? res.json() : Promise.reject())
@@ -39,7 +39,7 @@ const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (username, password) => {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
+    const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -56,7 +56,7 @@ const AuthProvider = ({ children }) => {
   };
 
   const register = async (username, email, password) => {
-    const response = await fetch(`${API_URL}/api/auth/register`, {
+    const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password })
@@ -173,7 +173,7 @@ function AppContent() {
   const [setups, setSetups] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState('');
+  // Debug info removed
   const [currentView, setCurrentView] = useState('search'); // search, favorites, generator, compare
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
@@ -214,7 +214,7 @@ function AppContent() {
         if (value) params.append(key, value);
       });
       
-      const response = await fetch(`${API_URL}/api/setups?${params}`);
+      const response = await fetch(`/api/setups?${params}`);
       const data = await response.json();
       setSetups(data.setups || []);
     } catch (err) {
@@ -226,7 +226,7 @@ function AppContent() {
     if (!token) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/favorites`, {
+      const response = await fetch('/api/favorites', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -238,58 +238,29 @@ function AppContent() {
 
   // Cargar datos iniciales (cars y tracks)
   useEffect(() => {
-    console.log('=== INITIAL DATA LOAD ===');
-    console.log('Loading data from API_URL:', API_URL);
-    setDebugInfo(`Cargando datos desde: ${API_URL}`);
-    
     const loadData = async () => {
       try {
         setDataLoading(true);
+        console.log('API_URL:', API_URL);
         
         // Cargar coches
-        console.log('Fetching cars...');
-        setDebugInfo(prev => prev + '\nObteniendo coches...');
-        const carsResponse = await fetch(`${API_URL}/api/generator/cars`);
-        console.log('Cars response status:', carsResponse.status);
-        
+        const carsResponse = await fetch('/api/generator/cars');
         if (carsResponse.ok) {
           const carsData = await carsResponse.json();
-          console.log('Cars data received:', carsData);
-          console.log('Cars data length:', carsData.length);
-          console.log('First 3 cars:', carsData.slice(0, 3));
-          console.log('Setting cars state with:', carsData);
           setCars(carsData);
-          setDebugInfo(prev => prev + `\nCoches cargados: ${carsData.length}`);
-        } else {
-          console.error('Failed to fetch cars:', carsResponse.statusText);
-          setDebugInfo(prev => prev + `\nError cargando coches: ${carsResponse.statusText}`);
         }
         
         // Cargar circuitos
-        console.log('Fetching tracks...');
-        setDebugInfo(prev => prev + '\nObteniendo circuitos...');
-        const tracksResponse = await fetch(`${API_URL}/api/generator/tracks`);
-        console.log('Tracks response status:', tracksResponse.status);
-        
+        const tracksResponse = await fetch('/api/generator/tracks');
         if (tracksResponse.ok) {
           const tracksData = await tracksResponse.json();
-          console.log('Tracks data received:', tracksData);
-          console.log('Tracks data length:', tracksData.length);
-          console.log('First 3 tracks:', tracksData.slice(0, 3));
-          console.log('Setting tracks state with:', tracksData);
           setTracks(tracksData);
-          setDebugInfo(prev => prev + `\nCircuitos cargados: ${tracksData.length}`);
-        } else {
-          console.error('Failed to fetch tracks:', tracksResponse.statusText);
-          setDebugInfo(prev => prev + `\nError cargando circuitos: ${tracksResponse.statusText}`);
         }
         
         setDataLoading(false);
-        setDebugInfo(prev => prev + '\nCarga de datos completada');
         
       } catch (err) {
         console.error('Error loading data:', err);
-        setDebugInfo(prev => prev + `\nError: ${err.message}`);
         setDataLoading(false);
       }
     };
@@ -302,21 +273,7 @@ function AppContent() {
     searchSetups();
   }, [searchSetups]);
   
-  // Monitor cars state changes
-  useEffect(() => {
-    console.log('=== CARS STATE CHANGED ===');
-    console.log('Cars state updated:', cars);
-    console.log('Cars length:', cars.length);
-    console.log('Cars is array:', Array.isArray(cars));
-  }, [cars]);
-  
-  // Monitor tracks state changes
-  useEffect(() => {
-    console.log('=== TRACKS STATE CHANGED ===');
-    console.log('Tracks state updated:', tracks);
-    console.log('Tracks length:', tracks.length);
-    console.log('Tracks is array:', Array.isArray(tracks));
-  }, [tracks]);
+  // Debug monitoring removed
 
   useEffect(() => {
     if (user && token) {
@@ -334,7 +291,7 @@ function AppContent() {
       const isFavorited = favorites.some(f => f.setup_id === setupId);
       const method = isFavorited ? 'DELETE' : 'POST';
       
-      await fetch(`${API_URL}/api/favorites/${setupId}`, {
+      await fetch(`/api/favorites/${setupId}`, {
         method,
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -346,54 +303,50 @@ function AppContent() {
   };
 
   const generateSetup = async () => {
-    console.log('Generating setup with params:', generatorParams);
-    
     // Transform parameters to match backend expectations
     const requestParams = {
-      car_id: generatorParams.car_id,
-      track_id: generatorParams.track_id,
-      session_type: generatorParams.session_type,
-      setup_style: generatorParams.setupStyle,
-      weather_conditions: generatorParams.conditions
+      carId: generatorParams.car_id,
+      trackId: generatorParams.track_id,
+      sessionType: generatorParams.session_type,
+      setupStyle: generatorParams.setupStyle,
+      conditions: generatorParams.conditions || {}
     };
     
-    console.log('Transformed params for backend:', requestParams);
-    
     try {
-      const response = await fetch(`${API_URL}/api/generator/generate`, {
+      const response = await fetch('/api/generator/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestParams)
       });
       
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Response data:', data);
       
-      if (data.generated_setup) {
-        // Get car and track info from metadata
-        const carName = data.metadata?.car_name || 'Unknown Car';
-        const trackName = data.metadata?.track_name || 'Unknown Track';
+      if (data.setup) {
+        // Get car and track info from response
+        const carName = data.car?.name || 'Unknown Car';
+        const trackName = data.track?.name || 'Unknown Track';
         
         // Asegurar que los datos del coche y circuito estén en los arrays
-        if (!cars.find(c => c.id === requestParams.car_id)) {
-          setCars(prevCars => [...prevCars, { id: requestParams.car_id, name: carName }]);
+        if (!cars.find(c => c.id === requestParams.carId)) {
+          setCars(prevCars => [...prevCars, { id: requestParams.carId, name: carName }]);
         }
-        if (!tracks.find(t => t.id === requestParams.track_id)) {
-          setTracks(prevTracks => [...prevTracks, { id: requestParams.track_id, name: trackName }]);
+        if (!tracks.find(t => t.id === requestParams.trackId)) {
+          setTracks(prevTracks => [...prevTracks, { id: requestParams.trackId, name: trackName }]);
         }
         
         // Create a setup object compatible with the UI
         const generatedSetup = {
           id: 'generated_' + Date.now(),
-          car_id: requestParams.car_id,
-          track_id: requestParams.track_id,
-          session_type: requestParams.session_type,
+          car_id: requestParams.carId,
+          track_id: requestParams.trackId,
+          session_type: requestParams.sessionType,
           setup_name: `${t('generatedSetup')} - ${carName} ${t('at')} ${trackName}`,
-          data: data.generated_setup.data,
+          data: data.setup,
           metadata: {
             ...data.metadata,
-            setupStyle: requestParams.setup_style
+            setupStyle: requestParams.setupStyle,
+            car_name: carName,
+            track_name: trackName
           },
           average_rating: null,
           download_count: 0,
@@ -401,9 +354,6 @@ function AppContent() {
         };
         setSetups([generatedSetup]);
         setCurrentView('search');
-        console.log('Setup generated successfully!', generatedSetup);
-      } else {
-        console.log('No generated_setup in response:', data);
       }
     } catch (err) {
       console.error('Error generating setup:', err);
@@ -414,14 +364,7 @@ function AppContent() {
     const car = cars.find(c => c.id === setup.car_id);
     const track = tracks.find(t => t.id === setup.track_id);
     
-    console.log('Export setup data:', {
-      setup_car_id: setup.car_id,
-      setup_track_id: setup.track_id,
-      car_found: car,
-      track_found: track,
-      cars_length: cars.length,
-      tracks_length: tracks.length
-    });
+    // Export setup data
     
     // Generate iRacing-compatible setup instructions
     const setupInstructions = generateIRacingSetupInstructions(setup, car, track);
@@ -446,7 +389,6 @@ function AppContent() {
     const cleanSessionText = sessionText.replace(/[^a-zA-Z0-9]/g, '_');
     
     const fileName = `${cleanCarName}_${cleanTrackName}_${cleanSessionText}${styleText}_setup.txt`;
-    console.log('Generated filename:', fileName);
     
     a.download = fileName;
     a.click();
@@ -479,16 +421,35 @@ function AppContent() {
       if (data.suspension.front) {
         instructions += `   ${t('front')}:\n`;
         if (data.suspension.front.spring) instructions += `     - ${t('spring')}: ${data.suspension.front.spring}\n`;
-        if (data.suspension.front.damper) instructions += `     - ${t('damper')}: ${data.suspension.front.damper}\n`;
+        if (data.suspension.front.damper) {
+          if (typeof data.suspension.front.damper === 'object') {
+            if (data.suspension.front.damper.bump) instructions += `     - ${t('damper')} Bump: ${data.suspension.front.damper.bump}\n`;
+            if (data.suspension.front.damper.rebound) instructions += `     - ${t('damper')} Rebound: ${data.suspension.front.damper.rebound}\n`;
+          } else {
+            instructions += `     - ${t('damper')}: ${data.suspension.front.damper}\n`;
+          }
+        }
         if (data.suspension.front.antiRollBar) instructions += `     - ${t('antiRollBar')}: ${data.suspension.front.antiRollBar}\n`;
         if (data.suspension.front.rideHeight) instructions += `     - ${t('height')}: ${data.suspension.front.rideHeight}mm\n`;
+        if (data.suspension.front.camber) instructions += `     - Camber: ${data.suspension.front.camber}°\n`;
+        if (data.suspension.front.caster) instructions += `     - Caster: ${data.suspension.front.caster}°\n`;
+        if (data.suspension.front.toe) instructions += `     - Toe: ${data.suspension.front.toe}°\n`;
       }
       if (data.suspension.rear) {
         instructions += `   ${t('rear')}:\n`;
         if (data.suspension.rear.spring) instructions += `     - ${t('spring')}: ${data.suspension.rear.spring}\n`;
-        if (data.suspension.rear.damper) instructions += `     - ${t('damper')}: ${data.suspension.rear.damper}\n`;
+        if (data.suspension.rear.damper) {
+          if (typeof data.suspension.rear.damper === 'object') {
+            if (data.suspension.rear.damper.bump) instructions += `     - ${t('damper')} Bump: ${data.suspension.rear.damper.bump}\n`;
+            if (data.suspension.rear.damper.rebound) instructions += `     - ${t('damper')} Rebound: ${data.suspension.rear.damper.rebound}\n`;
+          } else {
+            instructions += `     - ${t('damper')}: ${data.suspension.rear.damper}\n`;
+          }
+        }
         if (data.suspension.rear.antiRollBar) instructions += `     - ${t('antiRollBar')}: ${data.suspension.rear.antiRollBar}\n`;
         if (data.suspension.rear.rideHeight) instructions += `     - ${t('height')}: ${data.suspension.rear.rideHeight}mm\n`;
+        if (data.suspension.rear.camber) instructions += `     - Camber: ${data.suspension.rear.camber}°\n`;
+        if (data.suspension.rear.toe) instructions += `     - Toe: ${data.suspension.rear.toe}°\n`;
       }
       instructions += `\n`;
     }
@@ -496,6 +457,8 @@ function AppContent() {
     // Aerodynamics
     if (data.aerodynamics) {
       instructions += `${t('aerodynamics')}:\n`;
+      if (data.aerodynamics.front) instructions += `   - ${t('front')}: ${data.aerodynamics.front}\n`;
+      if (data.aerodynamics.rear) instructions += `   - ${t('rear')}: ${data.aerodynamics.rear}\n`;
       if (data.aerodynamics.frontWing) instructions += `   - ${t('frontWing')}: ${data.aerodynamics.frontWing}\n`;
       if (data.aerodynamics.rearWing) instructions += `   - ${t('rearWing')}: ${data.aerodynamics.rearWing}\n`;
       if (data.aerodynamics.frontSplitter) instructions += `   - ${t('frontSplitter')}: ${data.aerodynamics.frontSplitter}\n`;
@@ -508,6 +471,9 @@ function AppContent() {
       if (data.differential.preload) instructions += `   - ${t('preload')}: ${data.differential.preload}\n`;
       if (data.differential.power) instructions += `   - ${t('power')}: ${data.differential.power}\n`;
       if (data.differential.coast) instructions += `   - ${t('coast')}: ${data.differential.coast}\n`;
+      if (data.differential.entry) instructions += `   - Entry: ${data.differential.entry}\n`;
+      if (data.differential.middle) instructions += `   - Middle: ${data.differential.middle}\n`;
+      if (data.differential.exit) instructions += `   - Exit: ${data.differential.exit}\n`;
       instructions += `\n`;
     }
     
@@ -516,18 +482,35 @@ function AppContent() {
       instructions += `${t('brakes')}:\n`;
       if (data.brakes.balance) instructions += `   - ${t('balance')}: ${data.brakes.balance}%\n`;
       if (data.brakes.pressure) instructions += `   - ${t('pressure')}: ${data.brakes.pressure}%\n`;
+      if (data.brakes.brakeDucts) {
+        if (data.brakes.brakeDucts.front) instructions += `   - Front Brake Ducts: ${data.brakes.brakeDucts.front}\n`;
+        if (data.brakes.brakeDucts.rear) instructions += `   - Rear Brake Ducts: ${data.brakes.brakeDucts.rear}\n`;
+      }
       instructions += `\n`;
     }
     
     // Tires
-    if (data.tires && data.tires.pressure) {
-      instructions += `${t('tirePressurePsi')}:\n`;
-      if (data.tires.pressure.fl) instructions += `   - ${t('frontLeft')}: ${data.tires.pressure.fl}\n`;
-      if (data.tires.pressure.fr) instructions += `   - ${t('frontRight')}: ${data.tires.pressure.fr}\n`;
-      if (data.tires.pressure.rl) instructions += `   - ${t('rearLeft')}: ${data.tires.pressure.rl}\n`;
-      if (data.tires.pressure.rr) instructions += `   - ${t('rearRight')}: ${data.tires.pressure.rr}\n`;
-      if (data.tires.pressure.front && !data.tires.pressure.fl) instructions += `   - ${t('frontPressure')}: ${data.tires.pressure.front}\n`;
-      if (data.tires.pressure.rear && !data.tires.pressure.rl) instructions += `   - ${t('rearPressure')}: ${data.tires.pressure.rear}\n`;
+    if (data.tires) {
+      instructions += `${t('tires')}:\n`;
+      if (data.tires.pressure) {
+        instructions += `   ${t('tirePressurePsi')}:\n`;
+        if (data.tires.pressure.fl) instructions += `     - ${t('frontLeft')}: ${data.tires.pressure.fl}\n`;
+        if (data.tires.pressure.fr) instructions += `     - ${t('frontRight')}: ${data.tires.pressure.fr}\n`;
+        if (data.tires.pressure.rl) instructions += `     - ${t('rearLeft')}: ${data.tires.pressure.rl}\n`;
+        if (data.tires.pressure.rr) instructions += `     - ${t('rearRight')}: ${data.tires.pressure.rr}\n`;
+        if (data.tires.pressure.front && !data.tires.pressure.fl) instructions += `     - ${t('frontPressure')}: ${data.tires.pressure.front}\n`;
+        if (data.tires.pressure.rear && !data.tires.pressure.rl) instructions += `     - ${t('rearPressure')}: ${data.tires.pressure.rear}\n`;
+        if (data.tires.pressure.frontLeft) instructions += `     - Front Left: ${data.tires.pressure.frontLeft} psi\n`;
+        if (data.tires.pressure.frontRight) instructions += `     - Front Right: ${data.tires.pressure.frontRight} psi\n`;
+        if (data.tires.pressure.rearLeft) instructions += `     - Rear Left: ${data.tires.pressure.rearLeft} psi\n`;
+        if (data.tires.pressure.rearRight) instructions += `     - Rear Right: ${data.tires.pressure.rearRight} psi\n`;
+      }
+      if (data.tires.compound) instructions += `   - ${t('compound')}: ${data.tires.compound}\n`;
+      if (data.tires.temperature) {
+        instructions += `   - Temperature Settings:\n`;
+        if (data.tires.temperature.front) instructions += `     - Front: ${data.tires.temperature.front}°F\n`;
+        if (data.tires.temperature.rear) instructions += `     - Rear: ${data.tires.temperature.rear}°F\n`;
+      }
       instructions += `\n`;
     }
     
@@ -541,6 +524,16 @@ function AppContent() {
           instructions += `     ${gear}: ${ratio}\n`;
         });
       }
+      if (data.gearing.differential) instructions += `   - Differential: ${data.gearing.differential}\n`;
+      if (data.gearing.clutch) instructions += `   - Clutch: ${data.gearing.clutch}\n`;
+      instructions += `\n`;
+    }
+    
+    // Fuel settings
+    if (data.fuel) {
+      instructions += `Fuel:\n`;
+      if (data.fuel.amount) instructions += `   - Amount: ${data.fuel.amount} L\n`;
+      if (data.fuel.strategy) instructions += `   - Strategy: ${data.fuel.strategy}\n`;
       instructions += `\n`;
     }
     
@@ -783,7 +776,11 @@ function AppContent() {
                                  <div className="tech-item">
                                    <strong>{t('front')}:</strong>
                                    <p>{t('spring')}: {setup.data.suspension.front.spring}</p>
-                                   <p>{t('damper')}: {setup.data.suspension.front.damper}</p>
+                                   <p>{t('damper')}: {
+                                     typeof setup.data.suspension.front.damper === 'object' 
+                                       ? `Bump: ${setup.data.suspension.front.damper.bump || 'N/A'}, Rebound: ${setup.data.suspension.front.damper.rebound || 'N/A'}`
+                                       : setup.data.suspension.front.damper
+                                   }</p>
                                    <p>{t('antiRollBar')}: {setup.data.suspension.front.antiRollBar}</p>
                                  </div>
                                )}
@@ -791,7 +788,11 @@ function AppContent() {
                                  <div className="tech-item">
                                    <strong>{t('rear')}:</strong>
                                    <p>{t('spring')}: {setup.data.suspension.rear.spring}</p>
-                                   <p>{t('damper')}: {setup.data.suspension.rear.damper}</p>
+                                   <p>{t('damper')}: {
+                                     typeof setup.data.suspension.rear.damper === 'object' 
+                                       ? `Bump: ${setup.data.suspension.rear.damper.bump || 'N/A'}, Rebound: ${setup.data.suspension.rear.damper.rebound || 'N/A'}`
+                                       : setup.data.suspension.rear.damper
+                                   }</p>
                                    <p>{t('antiRollBar')}: {setup.data.suspension.rear.antiRollBar}</p>
                                  </div>
                                )}
@@ -940,21 +941,17 @@ function AppContent() {
               <select 
                 value={generatorParams.car_id}
                 onChange={e => {
-                  console.log('Car selected:', e.target.value);
                   setGeneratorParams({...generatorParams, car_id: e.target.value});
                 }}
                 disabled={dataLoading}
               >
                 <option value="">{t('selectCar')}</option>
                 {cars && Array.isArray(cars) && cars.length > 0 ? (
-                  cars.map((car) => {
-                    console.log('Rendering car:', car);
-                    return (
-                      <option key={car.id} value={car.id}>
-                        {car.name}
-                      </option>
-                    );
-                  })
+                  cars.map((car) => (
+                    <option key={car.id} value={car.id}>
+                      {car.name}
+                    </option>
+                  ))
                 ) : (
                   <option disabled>No hay coches disponibles</option>
                 )}
@@ -963,21 +960,17 @@ function AppContent() {
               <select 
                 value={generatorParams.track_id}
                 onChange={e => {
-                  console.log('Track selected:', e.target.value);
                   setGeneratorParams({...generatorParams, track_id: e.target.value});
                 }}
                 disabled={dataLoading}
               >
                 <option value="">{t('selectTrack')}</option>
                 {tracks && Array.isArray(tracks) && tracks.length > 0 ? (
-                  tracks.map((track) => {
-                    console.log('Rendering track:', track);
-                    return (
-                      <option key={track.id} value={track.id}>
-                        {track.name}
-                      </option>
-                    );
-                  })
+                  tracks.map((track) => (
+                    <option key={track.id} value={track.id}>
+                      {track.name}
+                    </option>
+                  ))
                 ) : (
                   <option disabled>No hay circuitos disponibles</option>
                 )}
