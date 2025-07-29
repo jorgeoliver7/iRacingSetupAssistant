@@ -352,24 +352,24 @@ function AppContent() {
         const trackName = data.track?.name || 'Unknown Track';
         
         // Asegurar que los datos del coche y circuito estén en los arrays
-        if (!cars.find(c => c.id === requestParams.carId)) {
-          setCars(prevCars => [...prevCars, { id: requestParams.carId, name: carName }]);
+        if (!cars.find(c => c.id === requestParams.car_id)) {
+          setCars(prevCars => [...prevCars, { id: requestParams.car_id, name: carName }]);
         }
-        if (!tracks.find(t => t.id === requestParams.trackId)) {
-          setTracks(prevTracks => [...prevTracks, { id: requestParams.trackId, name: trackName }]);
+        if (!tracks.find(t => t.id === requestParams.track_id)) {
+          setTracks(prevTracks => [...prevTracks, { id: requestParams.track_id, name: trackName }]);
         }
         
         // Create a setup object compatible with the UI
         const generatedSetup = {
           id: 'generated_' + Date.now(),
-          car_id: requestParams.carId,
-          track_id: requestParams.trackId,
-          session_type: requestParams.sessionType,
+          car_id: requestParams.car_id,
+          track_id: requestParams.track_id,
+          session_type: requestParams.session_type,
           setup_name: `${t('generatedSetup')} - ${carName} ${t('at')} ${trackName}`,
           data: data.setup,
           metadata: {
             ...data.metadata,
-            setupStyle: requestParams.setupStyle,
+            setupStyle: requestParams.setup_style,
             car_name: carName,
             track_name: trackName
           },
