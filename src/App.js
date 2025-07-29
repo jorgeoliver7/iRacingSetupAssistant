@@ -4,7 +4,7 @@ import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 
 // Configuración de la API
 const API_URL = process.env.REACT_APP_API_URL || 
-  (process.env.NODE_ENV === 'production' ? 'https://i-racing-setup-assistant.vercel.app' : 'http://localhost:3001');
+  (process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:3001');
 
 // Context para autenticación
 const AuthContext = createContext();
