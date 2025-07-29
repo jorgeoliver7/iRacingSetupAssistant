@@ -51,31 +51,42 @@ router.post('/generate', optionalAuth, async (req, res) => {
     console.log('Car found:', car.name, 'Category:', car.category);
     console.log('Track found:', track.name, 'Type:', track.type);
     
-    // Get track characteristics if available
+    // Get track characteristics if available (handle missing table gracefully)
     console.log('Querying track characteristics for track ID:', trackId);
-    const characteristicsResult = await pool.query(
-      'SELECT * FROM track_characteristics WHERE track_id = $1',
-      [trackId]
-    );
-    console.log('Track characteristics result:', characteristicsResult.rows.length, 'rows');
-    
-    const trackCharacteristics = characteristicsResult.rows[0];
+    let trackCharacteristics = null;
+    try {
+      const characteristicsResult = await pool.query(
+        'SELECT * FROM track_characteristics WHERE track_id = $1',
+        [trackId]
+      );
+      console.log('Track characteristics result:', characteristicsResult.rows.length, 'rows');
+      trackCharacteristics = characteristicsResult.rows[0];
+    } catch (error) {
+      console.log('Track characteristics table not found, using defaults');
+      trackCharacteristics = null;
+    }
     console.log('Track characteristics:', trackCharacteristics ? 'found' : 'not found');
     
-    // Get existing template for this combination
+    // Get existing template for this combination (handle missing table gracefully)
     console.log('Querying templates with car category:', car.category, 'track type:', track.type);
-    const templateResult = await pool.query(
-      `SELECT * FROM setup_templates 
-       WHERE (car_category = $1 OR car_category IS NULL)
-       AND (track_type = $2 OR track_type IS NULL)
-       AND category = $3
-       AND is_active = true
-       ORDER BY 
-         CASE WHEN car_category = $1 THEN 1 ELSE 2 END,
-         CASE WHEN track_type = $2 THEN 1 ELSE 2 END
-       LIMIT 1`,
-      [car.category, track.type, track.type]
-    );
+    let templateResult = { rows: [] };
+    try {
+      templateResult = await pool.query(
+        `SELECT * FROM setup_templates 
+         WHERE (car_category = $1 OR car_category IS NULL)
+         AND (track_type = $2 OR track_type IS NULL)
+         AND category = $3
+         AND is_active = true
+         ORDER BY 
+           CASE WHEN car_category = $1 THEN 1 ELSE 2 END,
+           CASE WHEN track_type = $2 THEN 1 ELSE 2 END
+         LIMIT 1`,
+        [car.category, track.type, track.type]
+      );
+    } catch (error) {
+      console.log('Setup templates table not found, using default generation');
+      templateResult = { rows: [] };
+    }
     console.log('Template query result:', templateResult.rows.length, 'rows');
     
     let baseSetup;
@@ -331,18 +342,45 @@ function roundSetupValues(setup) {
   
   // Round suspension values
   if (roundedSetup.suspension) {
-    if (roundedSetup.suspension.front) {
-      roundedSetup.suspension.front.spring = Math.round(roundedSetup.suspension.front.spring);
-      roundedSetup.suspension.front.damper = Math.round(roundedSetup.suspension.front.damper);
-      roundedSetup.suspension.front.antiRollBar = Math.round(roundedSetup.suspension.front.antiRollBar);
-      roundedSetup.suspension.front.rideHeight = Math.round(roundedSetup.suspension.front.rideHeight);
-    }
-    if (roundedSetup.suspension.rear) {
-      roundedSetup.suspension.rear.spring = Math.round(roundedSetup.suspension.rear.spring);
-      roundedSetup.suspension.rear.damper = Math.round(roundedSetup.suspension.rear.damper);
-      roundedSetup.suspension.rear.antiRollBar = Math.round(roundedSetup.suspension.rear.antiRollBar);
-      roundedSetup.suspension.rear.rideHeight = Math.round(roundedSetup.suspension.rear.rideHeight);
-    }
+    ['front', 'rear'].forEach(position => {
+      if (roundedSetup.suspension[position]) {
+        const susp = roundedSetup.suspension[position];
+        
+        // Round basic suspension values
+        if (typeof susp.spring === 'number') {
+          susp.spring = Math.round(susp.spring);
+        }
+        if (typeof susp.antiRollBar === 'number') {
+          susp.antiRollBar = Math.round(susp.antiRollBar);
+        }
+        if (typeof susp.rideHeight === 'number') {
+          susp.rideHeight = Math.round(susp.rideHeight);
+        }
+        
+        // Round damper values (can be object or number)
+        if (typeof susp.damper === 'number') {
+          susp.damper = Math.round(susp.damper);
+        } else if (typeof susp.damper === 'object' && susp.damper) {
+          if (typeof susp.damper.bump === 'number') {
+            susp.damper.bump = Math.round(susp.damper.bump);
+          }
+          if (typeof susp.damper.rebound === 'number') {
+            susp.damper.rebound = Math.round(susp.damper.rebound);
+          }
+        }
+        
+        // Round alignment values to 1 decimal place
+        if (typeof susp.camber === 'number') {
+          susp.camber = Math.round(susp.camber * 10) / 10;
+        }
+        if (typeof susp.caster === 'number') {
+          susp.caster = Math.round(susp.caster * 10) / 10;
+        }
+        if (typeof susp.toe === 'number') {
+          susp.toe = Math.round(susp.toe * 10) / 10;
+        }
+      }
+    });
   }
   
   // Round aerodynamics values
@@ -359,6 +397,13 @@ function roundSetupValues(setup) {
     Object.keys(roundedSetup.differential).forEach(key => {
       if (typeof roundedSetup.differential[key] === 'number') {
         roundedSetup.differential[key] = Math.round(roundedSetup.differential[key]);
+      } else if (typeof roundedSetup.differential[key] === 'object' && roundedSetup.differential[key]) {
+        // Handle nested objects like ramp settings
+        Object.keys(roundedSetup.differential[key]).forEach(subKey => {
+          if (typeof roundedSetup.differential[key][subKey] === 'number') {
+            roundedSetup.differential[key][subKey] = Math.round(roundedSetup.differential[key][subKey] * 10) / 10;
+          }
+        });
       }
     });
   }
@@ -367,7 +412,19 @@ function roundSetupValues(setup) {
   if (roundedSetup.brakes) {
     Object.keys(roundedSetup.brakes).forEach(key => {
       if (typeof roundedSetup.brakes[key] === 'number') {
-        roundedSetup.brakes[key] = Math.round(roundedSetup.brakes[key]);
+        if (key === 'balance') {
+          // Brake balance to 1 decimal place
+          roundedSetup.brakes[key] = Math.round(roundedSetup.brakes[key] * 10) / 10;
+        } else {
+          roundedSetup.brakes[key] = Math.round(roundedSetup.brakes[key]);
+        }
+      } else if (typeof roundedSetup.brakes[key] === 'object' && roundedSetup.brakes[key]) {
+        // Handle nested objects like ducting
+        Object.keys(roundedSetup.brakes[key]).forEach(subKey => {
+          if (typeof roundedSetup.brakes[key][subKey] === 'number') {
+            roundedSetup.brakes[key][subKey] = Math.round(roundedSetup.brakes[key][subKey]);
+          }
+        });
       }
     });
   }
@@ -395,6 +452,26 @@ function roundSetupValues(setup) {
     }
   }
   
+  // Round fuel amount
+  if (roundedSetup.fuel?.amount && typeof roundedSetup.fuel.amount === 'number') {
+    roundedSetup.fuel.amount = Math.round(roundedSetup.fuel.amount);
+  }
+  
+  // Round NASCAR-specific values
+  if (typeof roundedSetup.trackBar === 'number') {
+    roundedSetup.trackBar = Math.round(roundedSetup.trackBar);
+  }
+  if (typeof roundedSetup.wedge === 'number') {
+    roundedSetup.wedge = Math.round(roundedSetup.wedge * 10) / 10;
+  }
+  if (roundedSetup.weight) {
+    Object.keys(roundedSetup.weight).forEach(key => {
+      if (typeof roundedSetup.weight[key] === 'number') {
+        roundedSetup.weight[key] = Math.round(roundedSetup.weight[key] * 10) / 10;
+      }
+    });
+  }
+  
   return roundedSetup;
 }
 
@@ -410,12 +487,29 @@ function applySetupStyle(baseSetup, style, carCategory, trackType) {
     if (setup.suspension) {
       setup.suspension.front.spring *= 0.88; // Softer springs for better tire contact
       setup.suspension.rear.spring *= 0.90;
-      setup.suspension.front.damper *= 0.92; // Softer damping for better compliance
-      setup.suspension.rear.damper *= 0.92;
+      
+      // Handle damper adjustments (object or number)
+      if (typeof setup.suspension.front.damper === 'object') {
+        setup.suspension.front.damper.bump *= 0.92;
+        setup.suspension.front.damper.rebound *= 0.92;
+      } else if (typeof setup.suspension.front.damper === 'number') {
+        setup.suspension.front.damper *= 0.92;
+      }
+      if (typeof setup.suspension.rear.damper === 'object') {
+        setup.suspension.rear.damper.bump *= 0.92;
+        setup.suspension.rear.damper.rebound *= 0.92;
+      } else if (typeof setup.suspension.rear.damper === 'number') {
+        setup.suspension.rear.damper *= 0.92;
+      }
+      
       setup.suspension.front.antiRollBar *= 0.85; // Less roll stiffness for better grip
       setup.suspension.rear.antiRollBar *= 0.88;
       setup.suspension.front.rideHeight += 2; // Higher ride height for stability
       setup.suspension.rear.rideHeight += 2;
+      
+      // Conservative alignment settings
+      if (setup.suspension.front.camber) setup.suspension.front.camber += 0.2; // Less aggressive camber
+      if (setup.suspension.rear.camber) setup.suspension.rear.camber += 0.1;
     }
     
     // Conservative aerodynamics - more downforce for stability
@@ -454,12 +548,29 @@ function applySetupStyle(baseSetup, style, carCategory, trackType) {
     if (setup.suspension) {
       setup.suspension.front.spring *= 1.12; // Stiffer springs for better aero platform
       setup.suspension.rear.spring *= 1.10;
-      setup.suspension.front.damper *= 1.08; // Stiffer damping for quick response
-      setup.suspension.rear.damper *= 1.08;
+      
+      // Handle damper adjustments (object or number)
+      if (typeof setup.suspension.front.damper === 'object') {
+        setup.suspension.front.damper.bump *= 1.08;
+        setup.suspension.front.damper.rebound *= 1.08;
+      } else if (typeof setup.suspension.front.damper === 'number') {
+        setup.suspension.front.damper *= 1.08;
+      }
+      if (typeof setup.suspension.rear.damper === 'object') {
+        setup.suspension.rear.damper.bump *= 1.08;
+        setup.suspension.rear.damper.rebound *= 1.08;
+      } else if (typeof setup.suspension.rear.damper === 'number') {
+        setup.suspension.rear.damper *= 1.08;
+      }
+      
       setup.suspension.front.antiRollBar *= 1.15; // More roll stiffness for precision
       setup.suspension.rear.antiRollBar *= 1.12;
       setup.suspension.front.rideHeight -= 2; // Lower for better aero and CoG
       setup.suspension.rear.rideHeight -= 2;
+      
+      // Aggressive alignment settings
+      if (setup.suspension.front.camber) setup.suspension.front.camber -= 0.3; // More aggressive camber
+      if (setup.suspension.rear.camber) setup.suspension.rear.camber -= 0.2;
     }
     
     // Aggressive aerodynamics - balance between downforce and drag
@@ -517,63 +628,292 @@ function generateDefaultSetup(carCategory, trackType) {
       road: {
         suspension: {
           // GT3 spring rates: ~950-1050 N/mm (170-185 lb/in equivalent)
-          front: { spring: 950, damper: 65, antiRollBar: 8, rideHeight: 55 },
-          rear: { spring: 1050, damper: 60, antiRollBar: 6, rideHeight: 60 }
+          front: { 
+            spring: 950, 
+            damper: { bump: 65, rebound: 70 }, 
+            antiRollBar: 8, 
+            rideHeight: 55,
+            camber: -2.8,
+            caster: 6.2,
+            toe: 0.1
+          },
+          rear: { 
+            spring: 1050, 
+            damper: { bump: 60, rebound: 65 }, 
+            antiRollBar: 6, 
+            rideHeight: 60,
+            camber: -2.2,
+            toe: 0.2
+          }
         },
         // GT3 aero: Medium downforce setup (+3 to +6 wing range typical)
-        aerodynamics: { frontWing: 4, rearWing: 6 },
-        differential: { preload: 80, power: 65, coast: 45 },
+        aerodynamics: { 
+          frontWing: 4, 
+          rearWing: 6,
+          frontSplitter: 3,
+          rearDiffuser: 2
+        },
+        differential: { 
+          preload: 80, 
+          power: 65, 
+          coast: 45,
+          ramp: { power: 1.5, coast: 1.2 }
+        },
         // GT3 brake bias: 52-54% typical
-        brakes: { balance: 53, pressure: 80 },
+        brakes: { 
+          balance: 53.2, 
+          pressure: 80,
+          ducting: { front: 3, rear: 2 },
+          pads: { front: 'medium', rear: 'medium' }
+        },
         // GT3 optimal hot pressures: 22-24 psi
-        tires: { pressure: { fl: 23.0, fr: 23.0, rl: 22.5, rr: 22.5 } }
+        tires: { 
+          pressure: { fl: 23.0, fr: 23.0, rl: 22.5, rr: 22.5 },
+          compound: 'medium'
+        },
+        gearing: {
+          final: 3.73,
+          ratios: {
+            '1st': 2.85,
+            '2nd': 2.05,
+            '3rd': 1.58,
+            '4th': 1.28,
+            '5th': 1.05,
+            '6th': 0.89
+          }
+        },
+        fuel: {
+          amount: 65,
+          strategy: 'balanced'
+        }
       },
       oval: {
         suspension: {
-          front: { spring: 1100, damper: 70, antiRollBar: 12, rideHeight: 45 },
-          rear: { spring: 1200, damper: 65, antiRollBar: 8, rideHeight: 50 }
+          front: { 
+            spring: 1100, 
+            damper: { bump: 70, rebound: 75 }, 
+            antiRollBar: 12, 
+            rideHeight: 45,
+            camber: -3.5,
+            caster: 8.0,
+            toe: 0.0
+          },
+          rear: { 
+            spring: 1200, 
+            damper: { bump: 65, rebound: 70 }, 
+            antiRollBar: 8, 
+            rideHeight: 50,
+            camber: -1.8,
+            toe: 0.1
+          }
         },
-        aerodynamics: { frontWing: 6, rearWing: 8 },
+        aerodynamics: { frontWing: 6, rearWing: 8, frontSplitter: 5 },
         differential: { preload: 90, power: 75, coast: 55 },
-        brakes: { balance: 52, pressure: 80 },
-        tires: { pressure: { fl: 24.0, fr: 24.0, rl: 23.0, rr: 23.0 } }
+        brakes: { balance: 52.0, pressure: 80 },
+        tires: { 
+          pressure: { fl: 24.0, fr: 24.0, rl: 23.0, rr: 23.0 },
+          compound: 'hard'
+        },
+        gearing: { final: 3.55 },
+        fuel: { amount: 75 }
       }
     },
     'Formula': {
       road: {
         suspension: {
           // Formula cars: Very stiff springs for high downforce
-          front: { spring: 1400, damper: 80, antiRollBar: 15, rideHeight: 35 },
-          rear: { spring: 1500, damper: 75, antiRollBar: 12, rideHeight: 40 }
+          front: { 
+            spring: 1400, 
+            damper: { bump: 80, rebound: 85 }, 
+            antiRollBar: 15, 
+            rideHeight: 35,
+            camber: -3.2,
+            caster: 7.5,
+            toe: 0.0
+          },
+          rear: { 
+            spring: 1500, 
+            damper: { bump: 75, rebound: 80 }, 
+            antiRollBar: 12, 
+            rideHeight: 40,
+            camber: -2.8,
+            toe: 0.1
+          }
         },
         // Formula: High downforce setup
-        aerodynamics: { frontWing: 8, rearWing: 12 },
+        aerodynamics: { 
+          frontWing: 8, 
+          rearWing: 12,
+          frontFlap: 2,
+          rearFlap: 3
+        },
         differential: { preload: 60, power: 50, coast: 35 },
         // Formula: More forward brake bias
-        brakes: { balance: 56, pressure: 85 },
+        brakes: { 
+          balance: 56.5, 
+          pressure: 85,
+          ducting: { front: 4, rear: 3 }
+        },
         // Formula: Higher tire pressures
-        tires: { pressure: { fl: 24.0, fr: 24.0, rl: 23.5, rr: 23.5 } }
+        tires: { 
+          pressure: { fl: 24.0, fr: 24.0, rl: 23.5, rr: 23.5 },
+          compound: 'soft'
+        },
+        gearing: {
+          final: 4.12,
+          ratios: {
+            '1st': 3.15,
+            '2nd': 2.28,
+            '3rd': 1.75,
+            '4th': 1.42,
+            '5th': 1.18,
+            '6th': 1.00,
+            '7th': 0.86,
+            '8th': 0.75
+          }
+        },
+        fuel: { amount: 45 }
       }
     },
     'NASCAR': {
       oval: {
         suspension: {
           // NASCAR: Very stiff springs (1000+ lb/in typical)
-          front: { spring: 1600, damper: 90, antiRollBar: 20, rideHeight: 40 },
-          rear: { spring: 1700, damper: 85, antiRollBar: 15, rideHeight: 45 }
+          front: { 
+            spring: 1600, 
+            damper: { bump: 90, rebound: 95 }, 
+            antiRollBar: 20, 
+            rideHeight: 40,
+            camber: -4.0,
+            caster: 9.5,
+            toe: 0.0
+          },
+          rear: { 
+            spring: 1700, 
+            damper: { bump: 85, rebound: 90 }, 
+            antiRollBar: 15, 
+            rideHeight: 45,
+            camber: -2.5,
+            toe: 0.2
+          }
         },
         // NASCAR: Oval-specific aero
-        aerodynamics: { frontSplitter: 4, rearSpoiler: 7 },
+        aerodynamics: { 
+          frontSplitter: 4, 
+          rearSpoiler: 7,
+          grille: 'medium'
+        },
         differential: { preload: 100, power: 80, coast: 60 },
         // NASCAR: Balanced brake bias for oval
-        brakes: { balance: 50, pressure: 75 },
+        brakes: { 
+          balance: 50.0, 
+          pressure: 75,
+          ducting: { front: 2, rear: 1 }
+        },
         // NASCAR: Higher pressures with cross-weight consideration
-        tires: { pressure: { fl: 32.0, fr: 35.0, rl: 31.0, rr: 34.0 } }
+        tires: { 
+          pressure: { fl: 32.0, fr: 35.0, rl: 31.0, rr: 34.0 },
+          compound: 'hard'
+        },
+        gearing: {
+          final: 3.08,
+          ratios: {
+            '1st': 2.97,
+            '2nd': 1.78,
+            '3rd': 1.30,
+            '4th': 1.00
+          }
+        },
+        fuel: { amount: 85 },
+        trackBar: 12,
+        wedge: 52.5,
+        weight: {
+          front: 52.0,
+          left: 56.0
+        }
+      }
+    },
+    'GT4': {
+      road: {
+        suspension: {
+          front: { 
+            spring: 850, 
+            damper: { bump: 55, rebound: 60 }, 
+            antiRollBar: 6, 
+            rideHeight: 60,
+            camber: -2.5,
+            caster: 5.8,
+            toe: 0.1
+          },
+          rear: { 
+            spring: 950, 
+            damper: { bump: 50, rebound: 55 }, 
+            antiRollBar: 4, 
+            rideHeight: 65,
+            camber: -2.0,
+            toe: 0.2
+          }
+        },
+        aerodynamics: { frontWing: 3, rearWing: 4 },
+        differential: { preload: 70, power: 55, coast: 35 },
+        brakes: { balance: 54.0, pressure: 75 },
+        tires: { 
+          pressure: { fl: 22.5, fr: 22.5, rl: 22.0, rr: 22.0 },
+          compound: 'medium'
+        },
+        gearing: { final: 3.92 },
+        fuel: { amount: 60 }
+      }
+    },
+    'Prototype': {
+      road: {
+        suspension: {
+          front: { 
+            spring: 1200, 
+            damper: { bump: 75, rebound: 80 }, 
+            antiRollBar: 12, 
+            rideHeight: 45,
+            camber: -3.0,
+            caster: 7.0,
+            toe: 0.0
+          },
+          rear: { 
+            spring: 1300, 
+            damper: { bump: 70, rebound: 75 }, 
+            antiRollBar: 10, 
+            rideHeight: 50,
+            camber: -2.5,
+            toe: 0.1
+          }
+        },
+        aerodynamics: { frontWing: 6, rearWing: 9 },
+        differential: { preload: 75, power: 60, coast: 40 },
+        brakes: { balance: 55.0, pressure: 85 },
+        tires: { 
+          pressure: { fl: 23.5, fr: 23.5, rl: 23.0, rr: 23.0 },
+          compound: 'soft'
+        },
+        gearing: { final: 3.45 },
+        fuel: { amount: 70 }
       }
     }
   };
   
-  return baseSetups[carCategory]?.[trackType] || baseSetups['GT3']['road'];
+  // Fallback logic with better category matching
+  if (baseSetups[carCategory]?.[trackType]) {
+    return baseSetups[carCategory][trackType];
+  }
+  
+  // Try to find a setup for the same category but different track type
+  if (baseSetups[carCategory]) {
+    const availableTypes = Object.keys(baseSetups[carCategory]);
+    if (availableTypes.length > 0) {
+      return baseSetups[carCategory][availableTypes[0]];
+    }
+  }
+  
+  // Final fallback to GT3 road
+  return baseSetups['GT3']['road'];
 }
 
 // Helper function to apply track adaptations with realistic iRacing considerations

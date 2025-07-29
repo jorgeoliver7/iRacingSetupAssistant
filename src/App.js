@@ -3,7 +3,8 @@ import "./App.css";
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 
 // Configuración de la API
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' ? 'https://i-racing-setup-assistant.vercel.app' : 'http://localhost:3001');
 
 // Context para autenticación
 const AuthContext = createContext();
@@ -171,6 +172,8 @@ function AppContent() {
   const [tracks, setTracks] = useState([]);
   const [setups, setSetups] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState('');
   const [currentView, setCurrentView] = useState('search'); // search, favorites, generator, compare
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
@@ -233,22 +236,87 @@ function AppContent() {
     }
   }, [token]);
 
+  // Cargar datos iniciales (cars y tracks)
   useEffect(() => {
-    // Cargar coches
-    fetch(`${API_URL}/api/cars`)
-      .then(res => res.json())
-      .then(data => setCars(data))
-      .catch(err => console.error('Error loading cars:', err));
-      
-    // Cargar circuitos
-    fetch(`${API_URL}/api/tracks`)
-      .then(res => res.json())
-      .then(data => setTracks(data))
-      .catch(err => console.error('Error loading tracks:', err));
-      
-    // Cargar setups iniciales
+    console.log('=== INITIAL DATA LOAD ===');
+    console.log('Loading data from API_URL:', API_URL);
+    setDebugInfo(`Cargando datos desde: ${API_URL}`);
+    
+    const loadData = async () => {
+      try {
+        setDataLoading(true);
+        
+        // Cargar coches
+        console.log('Fetching cars...');
+        setDebugInfo(prev => prev + '\nObteniendo coches...');
+        const carsResponse = await fetch(`${API_URL}/api/generator/cars`);
+        console.log('Cars response status:', carsResponse.status);
+        
+        if (carsResponse.ok) {
+          const carsData = await carsResponse.json();
+          console.log('Cars data received:', carsData);
+          console.log('Cars data length:', carsData.length);
+          console.log('First 3 cars:', carsData.slice(0, 3));
+          console.log('Setting cars state with:', carsData);
+          setCars(carsData);
+          setDebugInfo(prev => prev + `\nCoches cargados: ${carsData.length}`);
+        } else {
+          console.error('Failed to fetch cars:', carsResponse.statusText);
+          setDebugInfo(prev => prev + `\nError cargando coches: ${carsResponse.statusText}`);
+        }
+        
+        // Cargar circuitos
+        console.log('Fetching tracks...');
+        setDebugInfo(prev => prev + '\nObteniendo circuitos...');
+        const tracksResponse = await fetch(`${API_URL}/api/generator/tracks`);
+        console.log('Tracks response status:', tracksResponse.status);
+        
+        if (tracksResponse.ok) {
+          const tracksData = await tracksResponse.json();
+          console.log('Tracks data received:', tracksData);
+          console.log('Tracks data length:', tracksData.length);
+          console.log('First 3 tracks:', tracksData.slice(0, 3));
+          console.log('Setting tracks state with:', tracksData);
+          setTracks(tracksData);
+          setDebugInfo(prev => prev + `\nCircuitos cargados: ${tracksData.length}`);
+        } else {
+          console.error('Failed to fetch tracks:', tracksResponse.statusText);
+          setDebugInfo(prev => prev + `\nError cargando circuitos: ${tracksResponse.statusText}`);
+        }
+        
+        setDataLoading(false);
+        setDebugInfo(prev => prev + '\nCarga de datos completada');
+        
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setDebugInfo(prev => prev + `\nError: ${err.message}`);
+        setDataLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []); // Sin dependencias para evitar re-renders
+  
+  // Cargar setups iniciales
+  useEffect(() => {
     searchSetups();
   }, [searchSetups]);
+  
+  // Monitor cars state changes
+  useEffect(() => {
+    console.log('=== CARS STATE CHANGED ===');
+    console.log('Cars state updated:', cars);
+    console.log('Cars length:', cars.length);
+    console.log('Cars is array:', Array.isArray(cars));
+  }, [cars]);
+  
+  // Monitor tracks state changes
+  useEffect(() => {
+    console.log('=== TRACKS STATE CHANGED ===');
+    console.log('Tracks state updated:', tracks);
+    console.log('Tracks length:', tracks.length);
+    console.log('Tracks is array:', Array.isArray(tracks));
+  }, [tracks]);
 
   useEffect(() => {
     if (user && token) {
@@ -282,11 +350,11 @@ function AppContent() {
     
     // Transform parameters to match backend expectations
     const requestParams = {
-      carId: generatorParams.car_id,
-      trackId: generatorParams.track_id,
-      sessionType: generatorParams.session_type,
-      setupStyle: generatorParams.setupStyle,
-      conditions: generatorParams.conditions
+      car_id: generatorParams.car_id,
+      track_id: generatorParams.track_id,
+      session_type: generatorParams.session_type,
+      setup_style: generatorParams.setupStyle,
+      weather_conditions: generatorParams.conditions
     };
     
     console.log('Transformed params for backend:', requestParams);
@@ -302,26 +370,30 @@ function AppContent() {
       const data = await response.json();
       console.log('Response data:', data);
       
-      if (data.setup) {
+      if (data.generated_setup) {
+        // Get car and track info from metadata
+        const carName = data.metadata?.car_name || 'Unknown Car';
+        const trackName = data.metadata?.track_name || 'Unknown Track';
+        
         // Asegurar que los datos del coche y circuito estén en los arrays
-        if (data.car && !cars.find(c => c.id === requestParams.carId)) {
-          setCars(prevCars => [...prevCars, { id: requestParams.carId, name: data.car.name }]);
+        if (!cars.find(c => c.id === requestParams.car_id)) {
+          setCars(prevCars => [...prevCars, { id: requestParams.car_id, name: carName }]);
         }
-        if (data.track && !tracks.find(t => t.id === requestParams.trackId)) {
-          setTracks(prevTracks => [...prevTracks, { id: requestParams.trackId, name: data.track.name }]);
+        if (!tracks.find(t => t.id === requestParams.track_id)) {
+          setTracks(prevTracks => [...prevTracks, { id: requestParams.track_id, name: trackName }]);
         }
         
         // Create a setup object compatible with the UI
         const generatedSetup = {
           id: 'generated_' + Date.now(),
-          car_id: requestParams.carId,
-          track_id: requestParams.trackId,
-          session_type: requestParams.sessionType,
-          setup_name: `${t('generatedSetup')} - ${data.car.name} ${t('at')} ${data.track.name}`,
-          data: data.setup,
+          car_id: requestParams.car_id,
+          track_id: requestParams.track_id,
+          session_type: requestParams.session_type,
+          setup_name: `${t('generatedSetup')} - ${carName} ${t('at')} ${trackName}`,
+          data: data.generated_setup.data,
           metadata: {
             ...data.metadata,
-            setupStyle: requestParams.setupStyle
+            setupStyle: requestParams.setup_style
           },
           average_rating: null,
           download_count: 0,
@@ -331,7 +403,7 @@ function AppContent() {
         setCurrentView('search');
         console.log('Setup generated successfully!', generatedSetup);
       } else {
-        console.log('No setup in response:', data);
+        console.log('No generated_setup in response:', data);
       }
     } catch (err) {
       console.error('Error generating setup:', err);
@@ -863,25 +935,52 @@ function AppContent() {
         {currentView === 'generator' && (
           <div className="generator-section">
             <h2>⚙️ {t('automaticSetupGenerator')}</h2>
+            
             <div className="generator-form">
               <select 
                 value={generatorParams.car_id}
-                onChange={e => setGeneratorParams({...generatorParams, car_id: e.target.value})}
+                onChange={e => {
+                  console.log('Car selected:', e.target.value);
+                  setGeneratorParams({...generatorParams, car_id: e.target.value});
+                }}
+                disabled={dataLoading}
               >
                 <option value="">{t('selectCar')}</option>
-                {cars.map(car => (
-                  <option key={car.id} value={car.id}>{car.name}</option>
-                ))}
+                {cars && Array.isArray(cars) && cars.length > 0 ? (
+                  cars.map((car) => {
+                    console.log('Rendering car:', car);
+                    return (
+                      <option key={car.id} value={car.id}>
+                        {car.name}
+                      </option>
+                    );
+                  })
+                ) : (
+                  <option disabled>No hay coches disponibles</option>
+                )}
               </select>
               
               <select 
                 value={generatorParams.track_id}
-                onChange={e => setGeneratorParams({...generatorParams, track_id: e.target.value})}
+                onChange={e => {
+                  console.log('Track selected:', e.target.value);
+                  setGeneratorParams({...generatorParams, track_id: e.target.value});
+                }}
+                disabled={dataLoading}
               >
                 <option value="">{t('selectTrack')}</option>
-                {tracks.map(track => (
-                  <option key={track.id} value={track.id}>{track.name}</option>
-                ))}
+                {tracks && Array.isArray(tracks) && tracks.length > 0 ? (
+                  tracks.map((track) => {
+                    console.log('Rendering track:', track);
+                    return (
+                      <option key={track.id} value={track.id}>
+                        {track.name}
+                      </option>
+                    );
+                  })
+                ) : (
+                  <option disabled>No hay circuitos disponibles</option>
+                )}
               </select>
               
               <select 

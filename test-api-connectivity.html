@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connectivity Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>API Connectivity Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const API_URL = '';
+        const results = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+        
+        async function testEndpoint(url, name) {
+            try {
+                addResult(`Testing ${name}: ${url}`, 'info');
+                
+                const response = await fetch(url);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ ${name} SUCCESS - Status: ${response.status}`, 'success');
+                    addResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                } else {
+                    addResult(`❌ ${name} FAILED - Status: ${response.status}`, 'error');
+                    const text = await response.text();
+                    addResult(`<pre>Response: ${text}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ${name} ERROR: ${error.message}`, 'error');
+                addResult(`<pre>Error details: ${error.stack}</pre>`, 'error');
+            }
+        }
+        
+        async function runTests() {
+            addResult('Starting API connectivity tests...', 'info');
+            addResult(`API_URL configured as: "${API_URL}"`, 'info');
+            
+            // Test health endpoint
+            await testEndpoint(`${API_URL}/api/health`, 'Health Check');
+            
+            // Test cars endpoint
+            await testEndpoint(`${API_URL}/api/generator/cars`, 'Cars Endpoint');
+            
+            // Test tracks endpoint
+            await testEndpoint(`${API_URL}/api/generator/tracks`, 'Tracks Endpoint');
+            
+            addResult('All tests completed!', 'info');
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>
