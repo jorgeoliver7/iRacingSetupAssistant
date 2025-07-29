@@ -303,6 +303,9 @@ function AppContent() {
   };
 
   const generateSetup = async () => {
+    // Debug: Log current generator params
+    console.log('Current generatorParams:', generatorParams);
+    
     // Transform parameters to match backend expectations
     const requestParams = {
       carId: generatorParams.car_id,
@@ -312,6 +315,19 @@ function AppContent() {
       conditions: generatorParams.conditions || {}
     };
     
+    // Debug: Log request params being sent
+    console.log('Request params being sent:', requestParams);
+    
+    // Validate required params before sending
+    if (!requestParams.carId || !requestParams.trackId) {
+      console.error('Missing required parameters:', {
+        carId: requestParams.carId,
+        trackId: requestParams.trackId
+      });
+      alert('Por favor selecciona un coche y un circuito antes de generar el setup.');
+      return;
+    }
+    
     try {
       const response = await fetch('/api/generator/generate', {
         method: 'POST',
@@ -320,6 +336,9 @@ function AppContent() {
       });
       
       const data = await response.json();
+      
+      // Debug: Log response
+      console.log('Response from server:', data);
       
       if (data.setup) {
         // Get car and track info from response
