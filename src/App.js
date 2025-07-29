@@ -305,6 +305,10 @@ function AppContent() {
   const generateSetup = async () => {
     // Debug: Log current generator params
     console.log('Current generatorParams:', generatorParams);
+    console.log('generatorParams.car_id:', generatorParams.car_id);
+    console.log('generatorParams.track_id:', generatorParams.track_id);
+    console.log('Type of car_id:', typeof generatorParams.car_id);
+    console.log('Type of track_id:', typeof generatorParams.track_id);
     
     // Transform parameters to match backend expectations
     const requestParams = {
@@ -317,6 +321,8 @@ function AppContent() {
     
     // Debug: Log request params being sent
     console.log('Request params being sent:', requestParams);
+    console.log('requestParams.carId:', requestParams.carId);
+    console.log('requestParams.trackId:', requestParams.trackId);
     
     // Validate required params before sending
     if (!requestParams.carId || !requestParams.trackId) {
