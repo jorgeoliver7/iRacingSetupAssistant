@@ -305,11 +305,12 @@ function AppContent() {
   const generateSetup = async () => {
     // Transform parameters to match backend expectations
     const requestParams = {
-      carId: generatorParams.car_id,
-      trackId: generatorParams.track_id,
-      sessionType: generatorParams.session_type,
-      setupStyle: generatorParams.setupStyle,
-      conditions: generatorParams.conditions || {}
+      car_id: generatorParams.car_id,
+      track_id: generatorParams.track_id,
+      session_type: generatorParams.session_type,
+      setup_style: generatorParams.setupStyle,
+      weather_conditions: generatorParams.conditions || {},
+      track_conditions: 'optimal'
     };
     
     try {
@@ -321,30 +322,30 @@ function AppContent() {
       
       const data = await response.json();
       
-      if (data.setup) {
+      if (data.generated_setup) {
         // Get car and track info from response
-        const carName = data.car?.name || 'Unknown Car';
-        const trackName = data.track?.name || 'Unknown Track';
+        const carName = data.metadata?.car_name || 'Unknown Car';
+        const trackName = data.metadata?.track_name || 'Unknown Track';
         
         // Asegurar que los datos del coche y circuito estén en los arrays
-        if (!cars.find(c => c.id === requestParams.carId)) {
-          setCars(prevCars => [...prevCars, { id: requestParams.carId, name: carName }]);
+        if (!cars.find(c => c.id === requestParams.car_id)) {
+          setCars(prevCars => [...prevCars, { id: requestParams.car_id, name: carName }]);
         }
-        if (!tracks.find(t => t.id === requestParams.trackId)) {
-          setTracks(prevTracks => [...prevTracks, { id: requestParams.trackId, name: trackName }]);
+        if (!tracks.find(t => t.id === requestParams.track_id)) {
+          setTracks(prevTracks => [...prevTracks, { id: requestParams.track_id, name: trackName }]);
         }
         
         // Create a setup object compatible with the UI
         const generatedSetup = {
           id: 'generated_' + Date.now(),
-          car_id: requestParams.carId,
-          track_id: requestParams.trackId,
-          session_type: requestParams.sessionType,
+          car_id: requestParams.car_id,
+          track_id: requestParams.track_id,
+          session_type: requestParams.session_type,
           setup_name: `${t('generatedSetup')} - ${carName} ${t('at')} ${trackName}`,
-          data: data.setup,
+          data: data.generated_setup.data,
           metadata: {
             ...data.metadata,
-            setupStyle: requestParams.setupStyle,
+            setupStyle: requestParams.setup_style,
             car_name: carName,
             track_name: trackName
           },
