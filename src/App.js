@@ -8,7 +8,7 @@ const getApiUrl = () => {
     return process.env.REACT_APP_API_URL;
   }
   if (process.env.NODE_ENV === 'production') {
-    return typeof window !== 'undefined' ? window.location.origin : '';
+    return typeof window !== 'undefined' ? window.location.origin : 'https://i-racing-setup-assistant-r12jsla4d-jorgeacedos-projects.vercel.app';
   }
   return 'http://localhost:3001';
 };
