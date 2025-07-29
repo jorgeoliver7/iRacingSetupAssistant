@@ -303,36 +303,14 @@ function AppContent() {
   };
 
   const generateSetup = async () => {
-    // Debug: Log current generator params
-    console.log('Current generatorParams:', generatorParams);
-    console.log('generatorParams.car_id:', generatorParams.car_id);
-    console.log('generatorParams.track_id:', generatorParams.track_id);
-    console.log('Type of car_id:', typeof generatorParams.car_id);
-    console.log('Type of track_id:', typeof generatorParams.track_id);
-    
     // Transform parameters to match backend expectations
     const requestParams = {
-      car_id: generatorParams.car_id,
-      track_id: generatorParams.track_id,
-      session_type: generatorParams.session_type,
-      setup_style: generatorParams.setupStyle,
-      weather_conditions: generatorParams.conditions
+      carId: generatorParams.car_id,
+      trackId: generatorParams.track_id,
+      sessionType: generatorParams.session_type,
+      setupStyle: generatorParams.setupStyle,
+      conditions: generatorParams.conditions || {}
     };
-    
-    // Debug: Log request params being sent
-    console.log('Request params being sent:', requestParams);
-    console.log('requestParams.car_id:', requestParams.car_id);
-    console.log('requestParams.track_id:', requestParams.track_id);
-    
-    // Validate required params before sending
-    if (!requestParams.car_id || !requestParams.track_id) {
-      console.error('Missing required parameters:', {
-        car_id: requestParams.car_id,
-        track_id: requestParams.track_id
-      });
-      alert('Por favor selecciona un coche y un circuito antes de generar el setup.');
-      return;
-    }
     
     try {
       const response = await fetch('/api/generator/generate', {
@@ -343,33 +321,30 @@ function AppContent() {
       
       const data = await response.json();
       
-      // Debug: Log response
-      console.log('Response from server:', data);
-      
       if (data.setup) {
         // Get car and track info from response
         const carName = data.car?.name || 'Unknown Car';
         const trackName = data.track?.name || 'Unknown Track';
         
         // Asegurar que los datos del coche y circuito estén en los arrays
-        if (!cars.find(c => c.id === requestParams.car_id)) {
-          setCars(prevCars => [...prevCars, { id: requestParams.car_id, name: carName }]);
+        if (!cars.find(c => c.id === requestParams.carId)) {
+          setCars(prevCars => [...prevCars, { id: requestParams.carId, name: carName }]);
         }
-        if (!tracks.find(t => t.id === requestParams.track_id)) {
-          setTracks(prevTracks => [...prevTracks, { id: requestParams.track_id, name: trackName }]);
+        if (!tracks.find(t => t.id === requestParams.trackId)) {
+          setTracks(prevTracks => [...prevTracks, { id: requestParams.trackId, name: trackName }]);
         }
         
         // Create a setup object compatible with the UI
         const generatedSetup = {
           id: 'generated_' + Date.now(),
-          car_id: requestParams.car_id,
-          track_id: requestParams.track_id,
-          session_type: requestParams.session_type,
+          car_id: requestParams.carId,
+          track_id: requestParams.trackId,
+          session_type: requestParams.sessionType,
           setup_name: `${t('generatedSetup')} - ${carName} ${t('at')} ${trackName}`,
           data: data.setup,
           metadata: {
             ...data.metadata,
-            setupStyle: requestParams.setup_style,
+            setupStyle: requestParams.setupStyle,
             car_name: carName,
             track_name: trackName
           },
