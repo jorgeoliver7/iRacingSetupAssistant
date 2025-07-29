@@ -312,23 +312,23 @@ function AppContent() {
     
     // Transform parameters to match backend expectations
     const requestParams = {
-      carId: generatorParams.car_id,
-      trackId: generatorParams.track_id,
-      sessionType: generatorParams.session_type,
-      setupStyle: generatorParams.setupStyle,
-      conditions: generatorParams.conditions || {}
+      car_id: generatorParams.car_id,
+      track_id: generatorParams.track_id,
+      session_type: generatorParams.session_type,
+      setup_style: generatorParams.setupStyle,
+      weather_conditions: generatorParams.conditions
     };
     
     // Debug: Log request params being sent
     console.log('Request params being sent:', requestParams);
-    console.log('requestParams.carId:', requestParams.carId);
-    console.log('requestParams.trackId:', requestParams.trackId);
+    console.log('requestParams.car_id:', requestParams.car_id);
+    console.log('requestParams.track_id:', requestParams.track_id);
     
     // Validate required params before sending
-    if (!requestParams.carId || !requestParams.trackId) {
+    if (!requestParams.car_id || !requestParams.track_id) {
       console.error('Missing required parameters:', {
-        carId: requestParams.carId,
-        trackId: requestParams.trackId
+        car_id: requestParams.car_id,
+        track_id: requestParams.track_id
       });
       alert('Por favor selecciona un coche y un circuito antes de generar el setup.');
       return;
