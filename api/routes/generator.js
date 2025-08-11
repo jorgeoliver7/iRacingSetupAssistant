@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
 const { optionalAuth } = require('./auth');
+const { cars, tracks } = require('../../backend/update_iracing_data');
 
 // Configurar pool de conexión para serverless
 let pool;
@@ -20,10 +21,14 @@ function getPool() {
 
 // Get all cars
 router.get('/cars', async (req, res) => {
-  const pool = getPool();
   try {
-    const result = await pool.query('SELECT id, name FROM cars ORDER BY name');
-    res.json(result.rows);
+    const carsWithIds = cars.map((car, index) => ({
+      id: index + 1,
+      name: car.name,
+      category: car.category
+    }));
+    console.log('Returning', carsWithIds.length, 'cars');
+    res.json(carsWithIds);
   } catch (error) {
     console.error('Error fetching cars:', error);
     res.status(500).json({ error: 'Error al obtener coches' });
@@ -32,10 +37,15 @@ router.get('/cars', async (req, res) => {
 
 // Get all tracks
 router.get('/tracks', async (req, res) => {
-  const pool = getPool();
   try {
-    const result = await pool.query('SELECT id, name FROM tracks ORDER BY name');
-    res.json(result.rows);
+    const tracksWithIds = tracks.map((track, index) => ({
+      id: index + 1,
+      name: track.name,
+      type: track.type,
+      country: track.country
+    }));
+    console.log('Returning', tracksWithIds.length, 'tracks');
+    res.json(tracksWithIds);
   } catch (error) {
     console.error('Error fetching tracks:', error);
     res.status(500).json({ error: 'Error al obtener circuitos' });
@@ -59,16 +69,26 @@ router.post('/generate', optionalAuth, async (req, res) => {
       return res.status(400).json({ error: 'Car ID y Track ID son requeridos' });
     }
     
-    // Get car and track information
-    const carResult = await pool.query('SELECT * FROM cars WHERE id = $1', [car_id]);
-    const trackResult = await pool.query('SELECT * FROM tracks WHERE id = $1', [track_id]);
+    // Get car and track information from static data
+    console.log('Getting car with ID:', car_id);
+    const carIndex = parseInt(car_id) - 1;
+    const car = cars[carIndex];
     
-    if (carResult.rows.length === 0 || trackResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Coche o pista no encontrados' });
+    console.log('Getting track with ID:', track_id);
+    const trackIndex = parseInt(track_id) - 1;
+    const track = tracks[trackIndex];
+    
+    if (!car) {
+      return res.status(404).json({ error: 'Car not found' });
     }
     
-    const car = carResult.rows[0];
-    const track = trackResult.rows[0];
+    if (!track) {
+      return res.status(404).json({ error: 'Track not found' });
+    }
+    
+    // Add IDs to the objects for compatibility
+    car.id = car_id;
+    track.id = track_id;
     
     // Generate base setup (simplified version without similar setups dependency)
     let generatedSetup = generateBaseSetup(car, track, setup_style, session_type);

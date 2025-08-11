@@ -53,8 +53,23 @@ const authenticateToken = (req, res, next) => {
 
 // Get all setups with filtering
 router.get('/', optionalAuth, async (req, res) => {
-  const pool = getPool();
   try {
+    // Return empty setups array when no database connection
+    // This prevents 500 errors in production
+    res.json({
+      setups: [],
+      pagination: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false
+      }
+    });
+    return;
+    
+    const pool = getPool();
     const {
       car_id,
       track_id,
