@@ -254,28 +254,44 @@ function AppContent() {
     const loadData = async () => {
       try {
         setDataLoading(true);
+        console.log('🚗 Iniciando carga de datos...');
         console.log('API_URL:', API_URL);
         
         // Cargar coches
         const carsApiUrl = '/api/generator/cars';
+        console.log('🚗 Cargando coches desde:', carsApiUrl);
         const carsResponse = await fetch(carsApiUrl);
+        console.log('🚗 Respuesta coches status:', carsResponse.status);
+        
         if (carsResponse.ok) {
           const carsData = await carsResponse.json();
+          console.log('🚗 Datos de coches recibidos:', carsData);
+          console.log('🚗 Número de coches:', carsData?.length || 0);
           setCars(carsData);
+        } else {
+          console.error('🚗 Error al cargar coches:', carsResponse.statusText);
         }
         
         // Cargar circuitos
         const tracksApiUrl = '/api/generator/tracks';
+        console.log('🏁 Cargando circuitos desde:', tracksApiUrl);
         const tracksResponse = await fetch(tracksApiUrl);
+        console.log('🏁 Respuesta circuitos status:', tracksResponse.status);
+        
         if (tracksResponse.ok) {
           const tracksData = await tracksResponse.json();
+          console.log('🏁 Datos de circuitos recibidos:', tracksData);
+          console.log('🏁 Número de circuitos:', tracksData?.length || 0);
           setTracks(tracksData);
+        } else {
+          console.error('🏁 Error al cargar circuitos:', tracksResponse.statusText);
         }
         
         setDataLoading(false);
+        console.log('✅ Carga de datos completada');
         
       } catch (err) {
-        console.error('Error loading data:', err);
+        console.error('❌ Error loading data:', err);
         setDataLoading(false);
       }
     };
@@ -963,15 +979,22 @@ function AppContent() {
                 disabled={dataLoading}
               >
                 <option value="">{t('selectCar')}</option>
-                {cars && Array.isArray(cars) && cars.length > 0 ? (
-                  cars.map((car) => (
-                    <option key={car.id} value={car.id}>
-                      {car.name}
-                    </option>
-                  ))
-                ) : (
-                  <option disabled>No hay coches disponibles</option>
-                )}
+                {(() => {
+                  console.log('🚗 Renderizando desplegable coches. Cars:', cars);
+                  console.log('🚗 Es array?', Array.isArray(cars));
+                  console.log('🚗 Longitud:', cars?.length);
+                  console.log('🚗 DataLoading:', dataLoading);
+                  
+                  if (cars && Array.isArray(cars) && cars.length > 0) {
+                    return cars.map((car) => (
+                      <option key={car.id} value={car.id}>
+                        {car.name}
+                      </option>
+                    ));
+                  } else {
+                    return <option disabled>No hay coches disponibles</option>;
+                  }
+                })()}
               </select>
               
               <select 
@@ -982,15 +1005,22 @@ function AppContent() {
                 disabled={dataLoading}
               >
                 <option value="">{t('selectTrack')}</option>
-                {tracks && Array.isArray(tracks) && tracks.length > 0 ? (
-                  tracks.map((track) => (
-                    <option key={track.id} value={track.id}>
-                      {track.name}
-                    </option>
-                  ))
-                ) : (
-                  <option disabled>No hay circuitos disponibles</option>
-                )}
+                {(() => {
+                  console.log('🏁 Renderizando desplegable circuitos. Tracks:', tracks);
+                  console.log('🏁 Es array?', Array.isArray(tracks));
+                  console.log('🏁 Longitud:', tracks?.length);
+                  console.log('🏁 DataLoading:', dataLoading);
+                  
+                  if (tracks && Array.isArray(tracks) && tracks.length > 0) {
+                    return tracks.map((track) => (
+                      <option key={track.id} value={track.id}>
+                        {track.name}
+                      </option>
+                    ));
+                  } else {
+                    return <option disabled>No hay circuitos disponibles</option>;
+                  }
+                })()}
               </select>
               
               <select 

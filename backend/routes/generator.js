@@ -2,28 +2,46 @@ const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
 const { authenticateToken, optionalAuth } = require('../auth');
+const { cars, tracks } = require('../update_iracing_data');
 require('dotenv').config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
 
-// Get all cars
+// Get all cars - usando datos estáticos
 router.get('/cars', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name, category FROM cars ORDER BY name');
-    res.json(result.rows);
+    // Convertir datos estáticos a formato con ID
+    const carsWithIds = cars.map((car, index) => ({
+      id: index + 1,
+      name: car.name,
+      category: car.category,
+      type: car.type
+    }));
+    
+    console.log(`Returning ${carsWithIds.length} cars from static data`);
+    res.json(carsWithIds);
   } catch (error) {
     console.error('Error fetching cars:', error);
     res.status(500).json({ error: 'Error al obtener coches' });
   }
 });
 
-// Get all tracks
+// Get all tracks - usando datos estáticos
 router.get('/tracks', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name, type, country FROM tracks ORDER BY name');
-    res.json(result.rows);
+    // Convertir datos estáticos a formato con ID
+    const tracksWithIds = tracks.map((track, index) => ({
+      id: index + 1,
+      name: track.name,
+      type: track.type,
+      country: track.country,
+      variants: track.variants
+    }));
+    
+    console.log(`Returning ${tracksWithIds.length} tracks from static data`);
+    res.json(tracksWithIds);
   } catch (error) {
     console.error('Error fetching tracks:', error);
     res.status(500).json({ error: 'Error al obtener circuitos' });
@@ -45,31 +63,26 @@ router.post('/generate', optionalAuth, async (req, res) => {
       });
     }
     
-    // Get car and track information
-    console.log('Querying car with ID:', carId);
-    const carResult = await pool.query(
-      'SELECT * FROM cars WHERE id = $1',
-      [carId]
-    );
-    console.log('Car query result:', carResult.rows.length, 'rows');
+    // Get car and track information from static data
+    console.log('Getting car with ID:', carId);
+    const carIndex = parseInt(carId) - 1;
+    const car = cars[carIndex];
     
-    console.log('Querying track with ID:', trackId);
-    const trackResult = await pool.query(
-      'SELECT * FROM tracks WHERE id = $1',
-      [trackId]
-    );
-    console.log('Track query result:', trackResult.rows.length, 'rows');
+    console.log('Getting track with ID:', trackId);
+    const trackIndex = parseInt(trackId) - 1;
+    const track = tracks[trackIndex];
     
-    if (carResult.rows.length === 0) {
+    if (!car) {
       return res.status(404).json({ error: 'Car not found' });
     }
     
-    if (trackResult.rows.length === 0) {
+    if (!track) {
       return res.status(404).json({ error: 'Track not found' });
     }
     
-    const car = carResult.rows[0];
-    const track = trackResult.rows[0];
+    // Add IDs to the objects for compatibility
+    car.id = carId;
+    track.id = trackId;
     console.log('Car found:', car.name, 'Category:', car.category);
     console.log('Track found:', track.name, 'Type:', track.type);
     
